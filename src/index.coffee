@@ -22,11 +22,14 @@ html ->
 
     maingame = undefined
 
+    W = 320
+    H = 320
+
     loadResources = ->
       help.akihabaraInit
         title: 'TINY UNIVERSE (working title)'
-        width: 320
-        height: 320
+        width: W
+        height: H
         zoom: 2
 
       gbox.setFps 60
@@ -58,6 +61,16 @@ html ->
         gapx: 0
         gapy: 0
 
+      gbox.addImage 'resources', 'resources.png'
+      gbox.addTiles
+        id: 'resources_tiles'
+        image: 'resources'
+        tileh: 1
+        tilew: 1
+        tilerow: 16
+        gapx: 0
+        gapy: 0
+
       gbox.addImage 'shots', 'shots.png'
       gbox.addTiles
         id: 'shots_tiles'
@@ -72,23 +85,107 @@ html ->
       gbox.addFont
         id: 'small'
         image: 'font'
-        firstletter: '!'
-        tileh: 16
-        tilew: 16
-        tilerow: 20
+        firstletter: 'A'
+        tileh: 8
+        tilew: 8
+        tilerow: 13
         gapx: 0
         gapy: 0
+
       gbox.loadAll main
     
     TURN_SPEED = 0.1
     ACC = 0.01
     DEC = 0.01
-
+    
+    paused = false
     player = undefined
     cam = {
       x:0
       y:0
     }
+    
+    togglePause = ->
+      paused = !paused
+    
+    rootMenu =
+      selected:0
+      up: ->
+        @selected = (@selected - 1) % @items.length
+        if @selected < 0
+          @selected = @items.length - 1
+        while !@items[@selected].enabled
+          @selected = (@selected - 1) % @items.length
+      down: ->
+        @selected = (@selected + 1) % @items.length
+        while !@items[@selected].enabled
+          @selected = (@selected + 1) % @items.length
+
+      items: [
+          name: 'FLEE'
+          enabled: true
+        ,
+          name: 'DROP PROBE'
+          enabled: false
+        ,
+          name: 'STARMAP'
+          enabled: true
+      ]
+
+    currentMenu = rootMenu
+
+    addPauseScreen = ->
+      gbox.addObject
+        x:0
+        y:0
+        vx:0
+        vy:0
+        group: 'pause'
+        first: ->
+          if gbox.keyIsHit 'c'
+            togglePause()
+
+          return if not paused
+
+          if gbox.keyIsHit 'up'
+            currentMenu.up()
+          else if gbox.keyIsHit 'down'
+            currentMenu.down()
+
+        blit: ->
+          return if not paused
+
+          gbox.blitFade gbox.getBufferContext(),
+            alpha:0.5
+
+          height = 9 * currentMenu.items.length
+          top = H/2 - height/2
+          top -= 9
+          num = 0
+          for item in currentMenu.items
+            top += 9
+            
+            if item.enabled
+              if currentMenu.selected == num
+                alpha = 1
+              else
+                alpha = 0.5
+            else
+              alpha = 0.25
+
+            ++num
+            gbox.blitText gbox.getBufferContext(),
+              font: 'small'
+              text: item.name
+              dx:0
+              dy:top
+              dw:W
+              dh:16
+              halign: gbox.ALIGN_CENTER
+              valign: gbox.ALIGN_TOP
+              alpha:alpha
+
+
 
     addCamera = ->
       gbox.addObject
@@ -105,11 +202,11 @@ html ->
           @vy = 0
 
         first: ->
-          @vx = (player.x+player.vx*6 - (@x+160)) * 0.05
-          @vy = (player.y+player.vy*6 - (@y+160)) * 0.05
+          return if paused
+          @vx = (player.x+player.vx*60 - (@x+160)) * 0.05
+          @vy = (player.y+player.vy*60 - (@y+160)) * 0.05
           @x += @vx
           @y += @vy
-
     addPlayer = ->
       gbox.addObject
         id: 'player_id'
@@ -135,25 +232,28 @@ html ->
           @wspeed = 2
           @wcost = 50
           @wspan = 80
+          @thrust = 0.01
+          @afterburn = 0.01
 
         first: ->
+          return if paused
           going = false
           if gbox.keyIsPressed 'up'
             going = true
             @vx += @ax
             @vy += @ay
-          else
-            @vx *= 1-DEC
-            @vy *= 1-DEC
+          else if gbox.keyIsPressed 'down'
+            @vx *= 1-@afterburn
+            @vy *= 1-@afterburn
 
           if gbox.keyIsPressed 'right'
             @ang += TURN_SPEED
-            @ax = Math.cos(@ang) * ACC
-            @ay = Math.sin(@ang) * ACC
+            @ax = Math.cos(@ang) * @thrust
+            @ay = Math.sin(@ang) * @thrust
           else if gbox.keyIsPressed 'left'
             @ang -= TURN_SPEED
-            @ax = Math.cos(@ang) * ACC
-            @ay = Math.sin(@ang) * ACC
+            @ax = Math.cos(@ang) * @thrust
+            @ay = Math.sin(@ang) * @thrust
 
           if @ang < 0
             @ang = Math.PI*2 - @ang
@@ -165,11 +265,10 @@ html ->
           @frame += 16 if going
 
           if gbox.keyIsHit('a') and (@wcharge >= @wcost)
-            console.log 'SHOT'
             @wcharge -= @wcost
             addShot @x+@w/2,@y+@h/2,
-              @x+@w/2+(@ax/ACC)*20000,
-              @y+@h/2+(@ay/ACC)*20000,
+              @x+@w/2+(@ax/@thrust)*20000,
+              @y+@h/2+(@ay/@thrust)*20000,
               @wspeed, 4, 'friend_shots', @wspan,
               @vx, @vy
 
@@ -229,6 +328,7 @@ html ->
           @afterburn = 0.005
 
         first: ->
+          return if paused
           if @hostile
             dx = player.x - @x
             dy = player.y - @y
@@ -299,6 +399,7 @@ html ->
           @dist = 20
 
         first: ->
+          return if paused
           @ang += 0.02 #Math.random() * Math.PI*2
           @xoff = Math.cos @ang
           @yoff = Math.sin @ang
@@ -340,15 +441,14 @@ html ->
           if vx and vy
             @vx += vx
             @vy += vy
-          console.log @vx + ', ' + @vy
           @lifespan = lifespan or 99999
           @tick = 0
 
         die: ->
-          console.log 'shotdie'
           gbox.trashObject @
 
         first: ->
+          return if paused
           @x += @vx
           @y += @vy
           ++@tick
@@ -381,9 +481,10 @@ html ->
           @dist = 3
 
         first: ->
+          return if paused
           @ang += 0.02 #Math.random() * Math.PI*2
           #@xoff = Math.cos @ang
-          @yoff = Math.sin @ang
+          @yoff = 3*Math.sin @ang
 
         initialize: ->
           @init()
@@ -392,7 +493,6 @@ html ->
           gbox.blitAll gbox.getBufferContext(), gbox.getImage('planet0'),
             dx: Math.round(@x + @xoff - cam.x)
             dy: Math.round(@y + @yoff - cam.y)
-
 
     main = ->
       gbox.setGroups [
@@ -404,6 +504,7 @@ html ->
         'drones'
         'friend_shots'
         'foe_shots'
+        'pause'
       ]
       maingame = gamecycle.createMaingame('game', 'game')
       maingame.gameMenu = -> true
@@ -429,6 +530,7 @@ html ->
         addDrone()
         addPlanet()
         addBaddie()
+        addPauseScreen()
 
         gbox.addObject
           id: 'bg_id'
@@ -440,33 +542,33 @@ html ->
               alpha:1
 
             gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-              dx:-cam.x % 320
-              dy:-cam.y % 320
+              dx:-cam.x % W
+              dy:-cam.y % H
 
             gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-              dx:-cam.x % 320 - 320
-              dy:-cam.y % 320 - 320
+              dx:-cam.x % W - W
+              dy:-cam.y % H - H
             gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-              dx:-cam.x % 320
-              dy:-cam.y % 320 - 320
+              dx:-cam.x % W
+              dy:-cam.y % H - H
             gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-              dx:-cam.x % 320 + 320
-              dy:-cam.y % 320 - 320
+              dx:-cam.x % W + W
+              dy:-cam.y % H - H
             gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-              dx:-cam.x % 320 + 320
-              dy:-cam.y % 320
+              dx:-cam.x % W + W
+              dy:-cam.y % H
             gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-              dx:-cam.x % 320 + 320
-              dy:-cam.y % 320 + 320
+              dx:-cam.x % W + W
+              dy:-cam.y % H + H
             gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-              dx:-cam.x % 320
-              dy:-cam.y % 320 + 320
+              dx:-cam.x % W
+              dy:-cam.y % H + H
             gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-              dx:-cam.x % 320 - 320
-              dy:-cam.y % 320 + 320
+              dx:-cam.x % W - W
+              dy:-cam.y % H + H
             gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-              dx:-cam.x % 320 - 320
-              dy:-cam.y % 320
+              dx:-cam.x % W - W
+              dy:-cam.y % H
 
       gbox.go()
 
