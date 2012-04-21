@@ -44,6 +44,16 @@ html ->
         gapx: 0
         gapy: 0
 
+      gbox.addImage 'bad0', 'bad0.png'
+      gbox.addTiles
+        id: 'bad0_tiles'
+        image: 'bad0'
+        tileh: 8
+        tilew: 8
+        tilerow: 16
+        gapx: 0
+        gapy: 0
+
       gbox.addImage 'planet0', 'planet0.png'
 
       gbox.addImage 'drones', 'drones.png'
@@ -53,6 +63,16 @@ html ->
         tileh: 5
         tilew: 5
         tilerow: 3
+        gapx: 0
+        gapy: 0
+
+      gbox.addImage 'shots', 'shots.png'
+      gbox.addTiles
+        id: 'shots_tiles'
+        image: 'shots'
+        tileh: 3
+        tilew: 3
+        tilerow: 9
         gapx: 0
         gapy: 0
 
@@ -88,20 +108,33 @@ html ->
           @vx = 0
           @vy = 0
           @ang = 0
+          @ax = 0
+          @ay = 0
+          @wcharge_cap = 100
+          @wcharge = @wcharge_cap
+          @wspeed = 2
+          @wcost = 50
+          @wspan = 80
 
         first: ->
           going = false
           if gbox.keyIsPressed 'up'
             going = true
-            @vx += Math.cos(@ang) * ACC
-            @vy += Math.sin(@ang) * ACC
+            @vx += @ax
+            @vy += @ay
 
           if gbox.keyIsPressed 'right'
             @ang += TURN_SPEED
+            @ax = Math.cos(@ang) * ACC
+            @ay = Math.sin(@ang) * ACC
           else if gbox.keyIsPressed 'left'
             @ang -= TURN_SPEED
+            @ax = Math.cos(@ang) * ACC
+            @ay = Math.sin(@ang) * ACC
+
           if @ang < 0
             @ang = Math.PI*2 - @ang
+
           @x += @vx
           @y += @vy
 
@@ -109,6 +142,18 @@ html ->
           @vy *= 1-DEC
           @frame = Math.round(((@ang+(Math.PI/2)) / (Math.PI*2)) * 16) % 16
           @frame += 16 if going
+
+          if gbox.keyIsHit('a') and (@wcharge >= @wcost)
+            console.log 'SHOT'
+            @wcharge -= @wcost
+            addShot @x+@w/2,@y+@h/2,
+              @x+@w/2+(@ax/ACC)*20000,
+              @y+@h/2+(@ay/ACC)*20000,
+              @wspeed, 4, 'friend_shots', @wspan,
+              @vx, @vy
+
+          if @wcharge < @wcharge_cap
+            @wcharge += 1
 
         initialize: ->
           @init()
@@ -119,6 +164,21 @@ html ->
             tile: @frame
             dx: Math.round @x
             dy: Math.round @y
+
+          ### DEBUG
+          gbox.blitTile gbox.getBufferContext(),
+            tileset: 'shots_tiles'
+            tile: 3
+            dx: (@x+@w/2)+@ax*20000
+            dy: (@y+@h/2)+@ay*20000
+          gbox.blitTile gbox.getBufferContext(),
+            tileset: 'shots_tiles'
+            tile: 7
+            dx: @x+@w/2
+            dy: @y+@h/2
+          ###
+
+
 
     addDrone = ->
       gbox.addObject
@@ -160,6 +220,52 @@ html ->
             dx: Math.round @x
             dy: Math.round @y
 
+    addShot = (x,y, tx,ty, speed, frame, group, lifespan, vx,vy) ->
+      gbox.addObject
+        group: group
+        init: ->
+          @frame = frame
+          @tileset = 'shots_tiles'
+          @w = 3
+          @h = 3
+          @x = x - @w/2
+          @y = y - @h/2
+          @vx = (tx - @x)
+          @vy = (ty - @y)
+          len = Math.sqrt(@vx*@vx + @vy*@vy)
+          @vx /= len
+          @vy /= len
+          @vx *= speed
+          @vy *= speed
+          if vx and vy
+            @vx += vx
+            @vy += vy
+          console.log @vx + ', ' + @vy
+          @lifespan = lifespan or 99999
+          @tick = 0
+
+        die: ->
+          console.log 'shotdie'
+          gbox.trashObject @
+
+        first: ->
+          @x += @vx
+          @y += @vy
+          ++@tick
+          if @tick > @lifespan
+            @die()
+
+        initialize: ->
+          @init()
+
+        blit: ->
+          gbox.blitTile gbox.getBufferContext(),
+            tileset: @tileset
+            tile: @frame
+            dx: Math.round @x
+            dy: Math.round @y
+
+
     addPlanet = ->
       gbox.addObject
         group: 'planet'
@@ -189,7 +295,15 @@ html ->
 
 
     main = ->
-      gbox.setGroups ['background', 'game', 'planet', 'drones', 'player']
+      gbox.setGroups [
+        'background'
+        'game'
+        'planet'
+        'drones'
+        'player'
+        'friend_shots'
+        'foe_shots'
+      ]
       maingame = gamecycle.createMaingame('game', 'game')
       maingame.gameMenu = -> true
  
