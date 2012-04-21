@@ -45,14 +45,6 @@ html ->
         gapy: 0
 
       gbox.addImage 'bad0', 'bad0.png'
-      gbox.addTiles
-        id: 'bad0_tiles'
-        image: 'bad0'
-        tileh: 8
-        tilew: 8
-        tilerow: 16
-        gapx: 0
-        gapy: 0
 
       gbox.addImage 'planet0', 'planet0.png'
 
@@ -178,18 +170,98 @@ html ->
             dy: @y+@h/2
           ###
 
+    addBaddie = ->
+      gbox.addObject
+        group: 'baddies'
+        init: ->
+          @num = 0
+          @frame = 0
+          @image = gbox.getImage('bad'+@num)
+          @w = 8
+          @h = 8
+          @x = Math.random() * gbox.getScreenW()
+          @y = Math.random() * gbox.getScreenH()
+          @vx = 0
+          @vy = 0
+          @wcharge_cap = 50
+          @wcharge = @wcharge_cap
+          @wspeed = 1
+          @wcost = 50
+          @wspan = 80
+          @tx = @x
+          @ty = @y
+          @tsx = 0
+          @tsy = 0
+          @attack_dist = 90
+          @orbit_radius = 60
+          @hostile = true
+          @ang = 0
+          @thrust = 0.006
+          @afterburn = 0.005
 
+        first: ->
+          if @hostile
+            dx = player.x - @x
+            dy = player.y - @y
+            d = Math.sqrt(dx*dx + dy*dy)
+
+            if @wcharge >= @wcost and d < @attack_dist
+              @tsx = player.x + player.vx
+              @tsy = player.y + player.vy
+              @wcharge -= @wcost
+              addShot @x+@w/2,@y+@h/2,
+                @tsx,
+                @tsy,
+                @wspeed, 1, 'foe_shots', @wspan,
+                @vx, @vy
+            @ang += 0.005
+            xoff = Math.cos @ang
+            yoff = Math.sin @ang
+            @tx = player.x + xoff*@orbit_radius
+            @ty = player.y + xoff*@orbit_radius
+          else
+            if Math.random() < 0.01
+              @tx = gbox.getScreenW()*Math.random()
+              @ty = gbox.getScreenH()*Math.random()
+
+          ax = @tx - @x
+          ay = @ty - @y
+          len = Math.sqrt(ax*ax + ay*ay)
+          ax /= len
+          ay /= len
+          ax *= @thrust
+          ay *= @thrust
+          @vx += ax
+          @vy += ay
+
+          @x += @vx
+          @y += @vy
+
+          @vx *= 1-@afterburn
+          @vy *= 1-@afterburn
+
+          if @wcharge < @wcharge_cap
+            @wcharge += 1
+
+        initialize: ->
+          @init()
+
+        blit: ->
+          gbox.blitAll gbox.getBufferContext(), @image,
+            dx: Math.round @x
+            dy: Math.round @y
 
     addDrone = ->
       gbox.addObject
         group: 'drones'
         init: ->
+          @deployed = false
           @frame = 0
           @tileset = 'drones_tiles'
           @w = 5
           @h = 5
-          @x = gbox.getScreenW()/2 - @w/2 - 100
-          @y = gbox.getScreenH()/2 - @h/2 - 100
+          @x = player.x + player.h/2 - @w/2
+          @y = player.y + player.h/2 - @h/2
           @vx = 0
           @vy = 0
           @ang = Math.random() * Math.PI*2
@@ -198,11 +270,9 @@ html ->
           @dist = 20
 
         first: ->
-          #if Math.random() < 0.02
           @ang += 0.02 #Math.random() * Math.PI*2
           @xoff = Math.cos @ang
           @yoff = Math.sin @ang
-          #console.log @yoff
 
           p=player
           tx = p.x + 4 + @dist*@xoff or 0
@@ -210,6 +280,7 @@ html ->
 
           @x += (tx - @x) * 0.025
           @y += (ty - @y) * 0.025
+
         initialize: ->
           @init()
 
@@ -299,8 +370,9 @@ html ->
         'background'
         'game'
         'planet'
-        'drones'
         'player'
+        'baddies'
+        'drones'
         'friend_shots'
         'foe_shots'
       ]
@@ -326,6 +398,7 @@ html ->
         addDrone()
         addDrone()
         addPlanet()
+        addBaddie()
 
         gbox.addObject
           id: 'bg_id'
