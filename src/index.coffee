@@ -85,11 +85,39 @@ html ->
     DEC = 0.01
 
     player = undefined
+    cam = {
+      x:0
+      y:0
+    }
+
+    addCamera = ->
+      gbox.addObject
+        id: 'cam_id'
+        x:0
+        y:0
+        vx:0
+        vy:0
+        group: 'game'
+        init: ->
+          @x = 100
+          @y = 100
+          @vx = 0
+          @vy = 0
+
+        first: ->
+          @vx = (player.x+player.vx*6 - (@x+160)) * 0.05
+          @vy = (player.y+player.vy*6 - (@y+160)) * 0.05
+          @x += @vx
+          @y += @vy
 
     addPlayer = ->
       gbox.addObject
         id: 'player_id'
         group: 'player'
+        x:0
+        y:0
+        vx:0
+        vy:0
         init: ->
           @frame = 0
           @tileset = 'ship0_tiles'
@@ -155,8 +183,8 @@ html ->
           gbox.blitTile gbox.getBufferContext(),
             tileset: @tileset
             tile: @frame
-            dx: Math.round @x
-            dy: Math.round @y
+            dx: Math.round(@x-cam.x)
+            dy: Math.round(@y-cam.y)
 
           ### DEBUG
           gbox.blitTile gbox.getBufferContext(),
@@ -249,8 +277,8 @@ html ->
 
         blit: ->
           gbox.blitAll gbox.getBufferContext(), @image,
-            dx: Math.round @x
-            dy: Math.round @y
+            dx: Math.round(@x-cam.x)
+            dy: Math.round(@y-cam.y)
 
     addDrone = ->
       gbox.addObject
@@ -289,8 +317,8 @@ html ->
           gbox.blitTile gbox.getBufferContext(),
             tileset: @tileset
             tile: @frame
-            dx: Math.round @x
-            dy: Math.round @y
+            dx: Math.round(@x-cam.x)
+            dy: Math.round(@y-cam.y)
 
     addShot = (x,y, tx,ty, speed, frame, group, lifespan, vx,vy) ->
       gbox.addObject
@@ -334,8 +362,8 @@ html ->
           gbox.blitTile gbox.getBufferContext(),
             tileset: @tileset
             tile: @frame
-            dx: Math.round @x
-            dy: Math.round @y
+            dx: Math.round(@x-cam.x)
+            dy: Math.round(@y-cam.y)
 
 
     addPlanet = ->
@@ -362,8 +390,8 @@ html ->
 
         blit: ->
           gbox.blitAll gbox.getBufferContext(), gbox.getImage('planet0'),
-            dx: Math.round(@x + @xoff)
-            dy: Math.round(@y + @yoff)
+            dx: Math.round(@x + @xoff - cam.x)
+            dy: Math.round(@y + @yoff - cam.y)
 
 
     main = ->
@@ -396,6 +424,7 @@ html ->
 
       maingame.initializeGame = ->
         player = addPlayer()
+        cam = addCamera()
         addDrone()
         addDrone()
         addPlanet()
@@ -411,8 +440,8 @@ html ->
               alpha:1
 
             gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-              dx:0
-              dy:0
+              dx:-cam.x
+              dy:-cam.y
       gbox.go()
 
     window.addEventListener 'load', loadResources, false
