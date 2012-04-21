@@ -110,16 +110,29 @@
         }
         return _results;
       },
+      select: function() {
+        console.log(this.items[this.selected].name);
+        return this.items[this.selected].select();
+      },
       items: [
         {
           name: 'FLEE',
-          enabled: true
+          enabled: true,
+          select: function() {
+            return togglePause();
+          }
         }, {
           name: 'DROP PROBE',
-          enabled: false
+          enabled: false,
+          select: function() {
+            return togglePause();
+          }
         }, {
           name: 'STARMAP',
-          enabled: true
+          enabled: true,
+          select: function() {
+            return togglePause();
+          }
         }
       ]
     };
@@ -134,6 +147,10 @@
         first: function() {
           if (gbox.keyIsHit('c')) togglePause();
           if (!paused) return;
+          if (gbox.keyIsHit('a')) {
+            currentMenu.select();
+            return;
+          }
           if (gbox.keyIsHit('up')) {
             return currentMenu.up();
           } else if (gbox.keyIsHit('down')) {
@@ -459,9 +476,10 @@
         }
       });
     };
-    addPlanet = function() {
+    addPlanet = function(radius) {
       return gbox.addObject({
         group: 'planet',
+        radius: radius || 50,
         init: function() {
           this.tileset = 'drones_tiles';
           this.w = 100;
@@ -471,7 +489,9 @@
           this.ang = 0;
           this.xoff = 0;
           this.yoff = 0;
-          return this.dist = 3;
+          this.dist = 3;
+          this.dirx = frand(-this.radius, this.radius);
+          return this.diry = frand(-this.radius * .1, this.radius * .1);
         },
         first: function() {
           if (paused) return;
@@ -482,10 +502,24 @@
           return this.init();
         },
         blit: function() {
-          return gbox.blitAll(gbox.getBufferContext(), gbox.getImage('planet0'), {
-            dx: Math.round(this.x + this.xoff - cam.x),
-            dy: Math.round(this.y + this.yoff - cam.y)
-          });
+          var ctx, grd, x, y;
+          ctx = gbox.getBufferContext();
+          if (!ctx) return;
+          x = Math.round(this.x + this.xoff - cam.x);
+          y = Math.round(this.y + this.yoff - cam.y);
+          ctx.beginPath();
+          grd = ctx.createRadialGradient(x + this.dirx, y + this.diry, 0, x + this.dirx, y + this.diry, this.radius * 1.4);
+          grd.addColorStop(0, '#224455');
+          grd.addColorStop(1, '#000510');
+          ctx.fillStyle = grd;
+          ctx.arc(x, y, this.radius, 0, 2 * Math.PI, false);
+          ctx.fill();
+          return ctx.closePath();
+          /*
+                    gbox.blitAll gbox.getBufferContext(), gbox.getImage('planet0'),
+                      dx: Math.round(@x + @xoff - cam.x)
+                      dy: Math.round(@y + @yoff - cam.y)
+          */
         }
       });
     };
