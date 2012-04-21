@@ -39,8 +39,8 @@ html ->
       gbox.addTiles
         id: 'ship0_tiles'
         image: 'ship0'
-        tileh: 16
-        tilew: 16
+        tileh: 8
+        tilew: 8
         tilerow: 16
         gapx: 0
         gapy: 0
@@ -58,7 +58,7 @@ html ->
       gbox.loadAll main
     
     TURN_SPEED = 0.025
-    ACC = 0.05
+    ACC = 0.0185
     DEC = 0.01
     addPlayer = ->
       gbox.addObject
@@ -69,8 +69,8 @@ html ->
         init: ->
           @frame = 0
           @tileset = 'ship0_tiles'
-          @w = 16
-          @h = 16
+          @w = 8
+          @h = 8
           @x = gbox.getScreenW()/2 - @w/2
           @y = gbox.getScreenH()/2 - @h/2
           @vx = 0
@@ -78,7 +78,9 @@ html ->
           @ang = 0
 
         first: ->
+          going = false
           if gbox.keyIsPressed 'up'
+            going = true
             @vx += Math.cos(@ang) * ACC
             @vy += Math.sin(@ang) * ACC
 
@@ -86,12 +88,15 @@ html ->
             @ang += TURN_SPEED
           else if gbox.keyIsPressed 'left'
             @ang -= TURN_SPEED
+          if @ang < 0
+            @ang = Math.PI*2 - @ang
           @x += @vx
           @y += @vy
 
           @vx *= 1-DEC
           @vy *= 1-DEC
           @frame = Math.round(((@ang+(Math.PI/2)) / (Math.PI*2)) * 16) % 16
+          @frame += 16 if going
 
         initialize: ->
           @init()
@@ -131,7 +136,7 @@ html ->
           color: 'rgb(0,0,0)'
           blit: ->
             gbox.blitFade gbox.getBufferContext(),
-              color:'black'
+              color:'#002233'
               alpha:1
       gbox.go()
 
