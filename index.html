@@ -1,5 +1,5 @@
 <html><head><script type="text/javascript" src="akihabara/gbox.js"></script><script type="text/javascript" src="akihabara/iphopad.js"></script><script type="text/javascript" src="akihabara/trigo.js"></script><script type="text/javascript" src="akihabara/toys.js"></script><script type="text/javascript" src="akihabara/help.js"></script><script type="text/javascript" src="akihabara/tool.js"></script><script type="text/javascript" src="akihabara/gamecycle.js"></script><link rel="stylesheet" href="style.css" /><meta name="viewport" content="width:device-width; initial-scale:1.0; maximum-scale:1.0; user-scalable:0;" /></head><body><div class="directions"></div></body><script>var __slice = Array.prototype.slice;var __hasProp = Object.prototype.hasOwnProperty;var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };var __extends = function(child, parent) {  for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }  function ctor() { this.constructor = child; }  ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype;  return child; };var __indexOf = Array.prototype.indexOf || function(item) {  for (var i = 0, l = this.length; i < l; i++) {    if (this[i] === item) return i;  } return -1; };(function () {
-    var ACC, DEC, TURN_SPEED, addDrone, addPlanet, addPlayer, choose, frand, loadResources, main, maingame, player;
+    var ACC, DEC, TURN_SPEED, addDrone, addPlanet, addPlayer, addShot, choose, frand, loadResources, main, maingame, player;
     frand = function(min, max) {
       return min + Math.random() * (max - min);
     };
@@ -30,6 +30,16 @@
         gapx: 0,
         gapy: 0
       });
+      gbox.addImage('bad0', 'bad0.png');
+      gbox.addTiles({
+        id: 'bad0_tiles',
+        image: 'bad0',
+        tileh: 8,
+        tilew: 8,
+        tilerow: 16,
+        gapx: 0,
+        gapy: 0
+      });
       gbox.addImage('planet0', 'planet0.png');
       gbox.addImage('drones', 'drones.png');
       gbox.addTiles({
@@ -38,6 +48,16 @@
         tileh: 5,
         tilew: 5,
         tilerow: 3,
+        gapx: 0,
+        gapy: 0
+      });
+      gbox.addImage('shots', 'shots.png');
+      gbox.addTiles({
+        id: 'shots_tiles',
+        image: 'shots',
+        tileh: 3,
+        tilew: 3,
+        tilerow: 9,
         gapx: 0,
         gapy: 0
       });
@@ -71,20 +91,31 @@
           this.y = gbox.getScreenH() / 2 - this.h / 2;
           this.vx = 0;
           this.vy = 0;
-          return this.ang = 0;
+          this.ang = 0;
+          this.ax = 0;
+          this.ay = 0;
+          this.wcharge_cap = 100;
+          this.wcharge = this.wcharge_cap;
+          this.wspeed = 2;
+          this.wcost = 50;
+          return this.wspan = 80;
         },
         first: function() {
           var going;
           going = false;
           if (gbox.keyIsPressed('up')) {
             going = true;
-            this.vx += Math.cos(this.ang) * ACC;
-            this.vy += Math.sin(this.ang) * ACC;
+            this.vx += this.ax;
+            this.vy += this.ay;
           }
           if (gbox.keyIsPressed('right')) {
             this.ang += TURN_SPEED;
+            this.ax = Math.cos(this.ang) * ACC;
+            this.ay = Math.sin(this.ang) * ACC;
           } else if (gbox.keyIsPressed('left')) {
             this.ang -= TURN_SPEED;
+            this.ax = Math.cos(this.ang) * ACC;
+            this.ay = Math.sin(this.ang) * ACC;
           }
           if (this.ang < 0) this.ang = Math.PI * 2 - this.ang;
           this.x += this.vx;
@@ -92,7 +123,13 @@
           this.vx *= 1 - DEC;
           this.vy *= 1 - DEC;
           this.frame = Math.round(((this.ang + (Math.PI / 2)) / (Math.PI * 2)) * 16) % 16;
-          if (going) return this.frame += 16;
+          if (going) this.frame += 16;
+          if (gbox.keyIsHit('a') && (this.wcharge >= this.wcost)) {
+            console.log('SHOT');
+            this.wcharge -= this.wcost;
+            addShot(this.x + this.w / 2, this.y + this.h / 2, this.x + this.w / 2 + (this.ax / ACC) * 20000, this.y + this.h / 2 + (this.ay / ACC) * 20000, this.wspeed, 4, 'friend_shots', this.wspan, this.vx, this.vy);
+          }
+          if (this.wcharge < this.wcharge_cap) return this.wcharge += 1;
         },
         initialize: function() {
           return this.init();
@@ -104,6 +141,18 @@
             dx: Math.round(this.x),
             dy: Math.round(this.y)
           });
+          /* DEBUG
+          gbox.blitTile gbox.getBufferContext(),
+            tileset: 'shots_tiles'
+            tile: 3
+            dx: (@x+@w/2)+@ax*20000
+            dy: (@y+@h/2)+@ay*20000
+          gbox.blitTile gbox.getBufferContext(),
+            tileset: 'shots_tiles'
+            tile: 7
+            dx: @x+@w/2
+            dy: @y+@h/2
+          */
         }
       });
     };
@@ -148,6 +197,55 @@
         }
       });
     };
+    addShot = function(x, y, tx, ty, speed, frame, group, lifespan, vx, vy) {
+      return gbox.addObject({
+        group: group,
+        init: function() {
+          var len;
+          this.frame = frame;
+          this.tileset = 'shots_tiles';
+          this.w = 3;
+          this.h = 3;
+          this.x = x - this.w / 2;
+          this.y = y - this.h / 2;
+          this.vx = tx - this.x;
+          this.vy = ty - this.y;
+          len = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+          this.vx /= len;
+          this.vy /= len;
+          this.vx *= speed;
+          this.vy *= speed;
+          if (vx && vy) {
+            this.vx += vx;
+            this.vy += vy;
+          }
+          console.log(this.vx + ', ' + this.vy);
+          this.lifespan = lifespan || 99999;
+          return this.tick = 0;
+        },
+        die: function() {
+          console.log('shotdie');
+          return gbox.trashObject(this);
+        },
+        first: function() {
+          this.x += this.vx;
+          this.y += this.vy;
+          ++this.tick;
+          if (this.tick > this.lifespan) return this.die();
+        },
+        initialize: function() {
+          return this.init();
+        },
+        blit: function() {
+          return gbox.blitTile(gbox.getBufferContext(), {
+            tileset: this.tileset,
+            tile: this.frame,
+            dx: Math.round(this.x),
+            dy: Math.round(this.y)
+          });
+        }
+      });
+    };
     addPlanet = function() {
       return gbox.addObject({
         group: 'planet',
@@ -178,7 +276,7 @@
       });
     };
     main = function() {
-      gbox.setGroups(['background', 'game', 'planet', 'drones', 'player']);
+      gbox.setGroups(['background', 'game', 'planet', 'drones', 'player', 'friend_shots', 'foe_shots']);
       maingame = gamecycle.createMaingame('game', 'game');
       maingame.gameMenu = function() {
         return true;
