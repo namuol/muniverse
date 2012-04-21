@@ -31,6 +31,7 @@ html ->
 
       gbox.setFps 60
 
+      gbox.addImage 'bg', 'bg.png'
       gbox.addImage 'logo', 'logo.png'
 
       gbox.addImage 'ship0', 'ship0.png'
@@ -42,6 +43,8 @@ html ->
         tilerow: 16
         gapx: 0
         gapy: 0
+
+      gbox.addImage 'planet0', 'planet0.png'
 
       gbox.addImage 'drones', 'drones.png'
       gbox.addTiles
@@ -116,6 +119,7 @@ html ->
             tile: @frame
             dx: Math.round @x
             dy: Math.round @y
+
     addDrone = ->
       gbox.addObject
         group: 'drones'
@@ -156,9 +160,36 @@ html ->
             dx: Math.round @x
             dy: Math.round @y
 
+    addPlanet = ->
+      gbox.addObject
+        group: 'planet'
+        init: ->
+          @tileset = 'drones_tiles'
+          @w = 100
+          @h = 100
+          @x = gbox.getScreenW()/2 - @w/2
+          @y = gbox.getScreenH()/2 - @h/2
+          @ang = 0
+          @xoff = 0
+          @yoff = 0
+          @dist = 3
+
+        first: ->
+          @ang += 0.02 #Math.random() * Math.PI*2
+          #@xoff = Math.cos @ang
+          @yoff = Math.sin @ang
+
+        initialize: ->
+          @init()
+
+        blit: ->
+          gbox.blitAll gbox.getBufferContext(), gbox.getImage('planet0'),
+            dx: Math.round(@x + @xoff)
+            dy: Math.round(@y + @yoff)
+
 
     main = ->
-      gbox.setGroups ['background', 'game', 'drones', 'player']
+      gbox.setGroups ['background', 'game', 'planet', 'drones', 'player']
       maingame = gamecycle.createMaingame('game', 'game')
       maingame.gameMenu = -> true
  
@@ -179,6 +210,8 @@ html ->
       maingame.initializeGame = ->
         player = addPlayer()
         addDrone()
+        addDrone()
+        addPlanet()
 
         gbox.addObject
           id: 'bg_id'
@@ -186,8 +219,12 @@ html ->
           color: 'rgb(0,0,0)'
           blit: ->
             gbox.blitFade gbox.getBufferContext(),
-              color:'#002233'
+              color:'#000510'
               alpha:1
+
+            gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
+              dx:0
+              dy:0
       gbox.go()
 
     window.addEventListener 'load', loadResources, false
