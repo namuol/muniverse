@@ -440,8 +440,34 @@ html ->
               alpha:1
 
             gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-              dx:-cam.x
-              dy:-cam.y
+              dx:-cam.x % 320
+              dy:-cam.y % 320
+
+            gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
+              dx:-cam.x % 320 - 320
+              dy:-cam.y % 320 - 320
+            gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
+              dx:-cam.x % 320
+              dy:-cam.y % 320 - 320
+            gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
+              dx:-cam.x % 320 + 320
+              dy:-cam.y % 320 - 320
+            gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
+              dx:-cam.x % 320 + 320
+              dy:-cam.y % 320
+            gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
+              dx:-cam.x % 320 + 320
+              dy:-cam.y % 320 + 320
+            gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
+              dx:-cam.x % 320
+              dy:-cam.y % 320 + 320
+            gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
+              dx:-cam.x % 320 - 320
+              dy:-cam.y % 320 + 320
+            gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
+              dx:-cam.x % 320 - 320
+              dy:-cam.y % 320
+
       gbox.go()
 
     window.addEventListener 'load', loadResources, false
