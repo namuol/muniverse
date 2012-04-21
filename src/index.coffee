@@ -120,16 +120,24 @@ html ->
         @selected = (@selected + 1) % @items.length
         while !@items[@selected].enabled
           @selected = (@selected + 1) % @items.length
-
+      select: ->
+        console.log @items[@selected].name
+        @items[@selected].select()
       items: [
           name: 'FLEE'
           enabled: true
+          select: ->
+            togglePause()
         ,
           name: 'DROP PROBE'
           enabled: false
+          select: ->
+            togglePause()
         ,
           name: 'STARMAP'
           enabled: true
+          select: ->
+            togglePause()
       ]
 
     currentMenu = rootMenu
@@ -147,10 +155,15 @@ html ->
 
           return if not paused
 
+          if gbox.keyIsHit 'a'
+            currentMenu.select()
+            return
+
           if gbox.keyIsHit 'up'
             currentMenu.up()
           else if gbox.keyIsHit 'down'
             currentMenu.down()
+
 
         blit: ->
           return if not paused
@@ -184,8 +197,6 @@ html ->
               halign: gbox.ALIGN_CENTER
               valign: gbox.ALIGN_TOP
               alpha:alpha
-
-
 
     addCamera = ->
       gbox.addObject
@@ -466,9 +477,10 @@ html ->
             dy: Math.round(@y-cam.y)
 
 
-    addPlanet = ->
+    addPlanet = (radius) ->
       gbox.addObject
         group: 'planet'
+        radius: radius or 50
         init: ->
           @tileset = 'drones_tiles'
           @w = 100
@@ -480,6 +492,10 @@ html ->
           @yoff = 0
           @dist = 3
 
+          # Sunlight direction:
+          @dirx = frand(-@radius,@radius)
+          @diry = frand(-@radius*.5,@radius*.5)
+
         first: ->
           return if paused
           @ang += 0.02 #Math.random() * Math.PI*2
@@ -490,9 +506,23 @@ html ->
           @init()
 
         blit: ->
+          ctx = gbox.getBufferContext()
+          return if not ctx
+          x = Math.round @x+@xoff-cam.x
+          y = Math.round @y+@yoff-cam.y
+          ctx.beginPath()
+          grd = ctx.createRadialGradient x+@dirx,y+@diry, 0, x+@dirx,y+@diry, @radius
+          grd.addColorStop 0, '#224455'
+          grd.addColorStop 1, '#000510'
+          ctx.fillStyle = grd
+          ctx.arc x,y, @radius, 0, 2*Math.PI, false
+          ctx.fill()
+          ctx.closePath()
+          ###
           gbox.blitAll gbox.getBufferContext(), gbox.getImage('planet0'),
             dx: Math.round(@x + @xoff - cam.x)
             dy: Math.round(@y + @yoff - cam.y)
+          ###
 
     main = ->
       gbox.setGroups [
