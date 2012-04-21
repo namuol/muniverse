@@ -43,6 +43,16 @@ html ->
         gapx: 0
         gapy: 0
 
+      gbox.addImage 'drones', 'drones.png'
+      gbox.addTiles
+        id: 'drones_tiles'
+        image: 'drones'
+        tileh: 5
+        tilew: 5
+        tilerow: 3
+        gapx: 0
+        gapy: 0
+
       gbox.addImage 'font', 'font.png'
       gbox.addFont
         id: 'small'
@@ -58,12 +68,13 @@ html ->
     TURN_SPEED = 0.05
     ACC = 0.005
     DEC = 0.004
+
+    player = undefined
+
     addPlayer = ->
       gbox.addObject
         id: 'player_id'
         group: 'player'
-        speed: 3
-        bullets: []
         init: ->
           @frame = 0
           @tileset = 'ship0_tiles'
@@ -105,9 +116,49 @@ html ->
             tile: @frame
             dx: Math.round @x
             dy: Math.round @y
+    addDrone = ->
+      gbox.addObject
+        group: 'drones'
+        init: ->
+          @frame = 0
+          @tileset = 'drones_tiles'
+          @w = 5
+          @h = 5
+          @x = gbox.getScreenW()/2 - @w/2 - 100
+          @y = gbox.getScreenH()/2 - @h/2 - 100
+          @vx = 0
+          @vy = 0
+          @ang = Math.random() * Math.PI*2
+          @xoff = Math.cos @ang
+          @yoff = Math.sin @ang
+          @dist = 20
+
+        first: ->
+          #if Math.random() < 0.02
+          @ang += 0.02 #Math.random() * Math.PI*2
+          @xoff = Math.cos @ang
+          @yoff = Math.sin @ang
+          #console.log @yoff
+
+          p=player
+          tx = p.x + 4 + @dist*@xoff or 0
+          ty = p.y + 4 + @dist*@yoff or 0
+
+          @x += (tx - @x) * 0.025
+          @y += (ty - @y) * 0.025
+        initialize: ->
+          @init()
+
+        blit: ->
+          gbox.blitTile gbox.getBufferContext(),
+            tileset: @tileset
+            tile: @frame
+            dx: Math.round @x
+            dy: Math.round @y
+
 
     main = ->
-      gbox.setGroups ['background', 'game', 'player']
+      gbox.setGroups ['background', 'game', 'drones', 'player']
       maingame = gamecycle.createMaingame('game', 'game')
       maingame.gameMenu = -> true
  
@@ -127,6 +178,7 @@ html ->
 
       maingame.initializeGame = ->
         player = addPlayer()
+        addDrone()
 
         gbox.addObject
           id: 'bg_id'
