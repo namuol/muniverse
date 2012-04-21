@@ -80,9 +80,9 @@ html ->
         gapy: 0
       gbox.loadAll main
     
-    TURN_SPEED = 0.05
-    ACC = 0.005
-    DEC = 0.004
+    TURN_SPEED = 0.1
+    ACC = 0.01
+    DEC = 0.01
 
     player = undefined
 
@@ -114,6 +114,9 @@ html ->
             going = true
             @vx += @ax
             @vy += @ay
+          else
+            @vx *= 1-DEC
+            @vy *= 1-DEC
 
           if gbox.keyIsPressed 'right'
             @ang += TURN_SPEED
@@ -130,8 +133,6 @@ html ->
           @x += @vx
           @y += @vy
 
-          @vx *= 1-DEC
-          @vy *= 1-DEC
           @frame = Math.round(((@ang+(Math.PI/2)) / (Math.PI*2)) * 16) % 16
           @frame += 16 if going
 
@@ -206,8 +207,8 @@ html ->
             d = Math.sqrt(dx*dx + dy*dy)
 
             if @wcharge >= @wcost and d < @attack_dist
-              @tsx = player.x + player.vx
-              @tsy = player.y + player.vy
+              @tsx = player.x + player.vx + @vx
+              @tsy = player.y + player.vy + @vy
               @wcharge -= @wcost
               addShot @x+@w/2,@y+@h/2,
                 @tsx,
