@@ -1,5 +1,5 @@
 <html><head><script type="text/javascript" src="akihabara/gbox.js"></script><script type="text/javascript" src="akihabara/iphopad.js"></script><script type="text/javascript" src="akihabara/trigo.js"></script><script type="text/javascript" src="akihabara/toys.js"></script><script type="text/javascript" src="akihabara/help.js"></script><script type="text/javascript" src="akihabara/tool.js"></script><script type="text/javascript" src="akihabara/gamecycle.js"></script><link rel="stylesheet" href="style.css" /><meta name="viewport" content="width:device-width; initial-scale:1.0; maximum-scale:1.0; user-scalable:0;" /></head><body><div class="directions"></div></body><script>var __slice = Array.prototype.slice;var __hasProp = Object.prototype.hasOwnProperty;var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };var __extends = function(child, parent) {  for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }  function ctor() { this.constructor = child; }  ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype;  return child; };var __indexOf = Array.prototype.indexOf || function(item) {  for (var i = 0, l = this.length; i < l; i++) {    if (this[i] === item) return i;  } return -1; };(function () {
-    var ACC, DEC, TURN_SPEED, addDrone, addPlanet, addPlayer, addShot, choose, frand, loadResources, main, maingame, player;
+    var ACC, DEC, TURN_SPEED, addBaddie, addCamera, addDrone, addPlanet, addPlayer, addShot, cam, choose, frand, loadResources, main, maingame, player;
     frand = function(min, max) {
       return min + Math.random() * (max - min);
     };
@@ -31,15 +31,6 @@
         gapy: 0
       });
       gbox.addImage('bad0', 'bad0.png');
-      gbox.addTiles({
-        id: 'bad0_tiles',
-        image: 'bad0',
-        tileh: 8,
-        tilew: 8,
-        tilerow: 16,
-        gapx: 0,
-        gapy: 0
-      });
       gbox.addImage('planet0', 'planet0.png');
       gbox.addImage('drones', 'drones.png');
       gbox.addTiles({
@@ -74,14 +65,44 @@
       });
       return gbox.loadAll(main);
     };
-    TURN_SPEED = 0.05;
-    ACC = 0.005;
-    DEC = 0.004;
+    TURN_SPEED = 0.1;
+    ACC = 0.01;
+    DEC = 0.01;
     player = void 0;
+    cam = {
+      x: 0,
+      y: 0
+    };
+    addCamera = function() {
+      return gbox.addObject({
+        id: 'cam_id',
+        x: 0,
+        y: 0,
+        vx: 0,
+        vy: 0,
+        group: 'game',
+        init: function() {
+          this.x = 100;
+          this.y = 100;
+          this.vx = 0;
+          return this.vy = 0;
+        },
+        first: function() {
+          this.vx = (player.x + player.vx * 6 - (this.x + 160)) * 0.05;
+          this.vy = (player.y + player.vy * 6 - (this.y + 160)) * 0.05;
+          this.x += this.vx;
+          return this.y += this.vy;
+        }
+      });
+    };
     addPlayer = function() {
       return gbox.addObject({
         id: 'player_id',
         group: 'player',
+        x: 0,
+        y: 0,
+        vx: 0,
+        vy: 0,
         init: function() {
           this.frame = 0;
           this.tileset = 'ship0_tiles';
@@ -107,6 +128,9 @@
             going = true;
             this.vx += this.ax;
             this.vy += this.ay;
+          } else {
+            this.vx *= 1 - DEC;
+            this.vy *= 1 - DEC;
           }
           if (gbox.keyIsPressed('right')) {
             this.ang += TURN_SPEED;
@@ -120,8 +144,6 @@
           if (this.ang < 0) this.ang = Math.PI * 2 - this.ang;
           this.x += this.vx;
           this.y += this.vy;
-          this.vx *= 1 - DEC;
-          this.vy *= 1 - DEC;
           this.frame = Math.round(((this.ang + (Math.PI / 2)) / (Math.PI * 2)) * 16) % 16;
           if (going) this.frame += 16;
           if (gbox.keyIsHit('a') && (this.wcharge >= this.wcost)) {
@@ -138,8 +160,8 @@
           return gbox.blitTile(gbox.getBufferContext(), {
             tileset: this.tileset,
             tile: this.frame,
-            dx: Math.round(this.x),
-            dy: Math.round(this.y)
+            dx: Math.round(this.x - cam.x),
+            dy: Math.round(this.y - cam.y)
           });
           /* DEBUG
           gbox.blitTile gbox.getBufferContext(),
@@ -156,16 +178,95 @@
         }
       });
     };
+    addBaddie = function() {
+      return gbox.addObject({
+        group: 'baddies',
+        init: function() {
+          this.num = 0;
+          this.frame = 0;
+          this.image = gbox.getImage('bad' + this.num);
+          this.w = 8;
+          this.h = 8;
+          this.x = Math.random() * gbox.getScreenW();
+          this.y = Math.random() * gbox.getScreenH();
+          this.vx = 0;
+          this.vy = 0;
+          this.wcharge_cap = 50;
+          this.wcharge = this.wcharge_cap;
+          this.wspeed = 1;
+          this.wcost = 50;
+          this.wspan = 80;
+          this.tx = this.x;
+          this.ty = this.y;
+          this.tsx = 0;
+          this.tsy = 0;
+          this.attack_dist = 90;
+          this.orbit_radius = 60;
+          this.hostile = true;
+          this.ang = 0;
+          this.thrust = 0.006;
+          return this.afterburn = 0.005;
+        },
+        first: function() {
+          var ax, ay, d, dx, dy, len, xoff, yoff;
+          if (this.hostile) {
+            dx = player.x - this.x;
+            dy = player.y - this.y;
+            d = Math.sqrt(dx * dx + dy * dy);
+            if (this.wcharge >= this.wcost && d < this.attack_dist) {
+              this.tsx = player.x + player.vx + this.vx;
+              this.tsy = player.y + player.vy + this.vy;
+              this.wcharge -= this.wcost;
+              addShot(this.x + this.w / 2, this.y + this.h / 2, this.tsx, this.tsy, this.wspeed, 1, 'foe_shots', this.wspan, this.vx, this.vy);
+            }
+            this.ang += 0.005;
+            xoff = Math.cos(this.ang);
+            yoff = Math.sin(this.ang);
+            this.tx = player.x + xoff * this.orbit_radius;
+            this.ty = player.y + xoff * this.orbit_radius;
+          } else {
+            if (Math.random() < 0.01) {
+              this.tx = gbox.getScreenW() * Math.random();
+              this.ty = gbox.getScreenH() * Math.random();
+            }
+          }
+          ax = this.tx - this.x;
+          ay = this.ty - this.y;
+          len = Math.sqrt(ax * ax + ay * ay);
+          ax /= len;
+          ay /= len;
+          ax *= this.thrust;
+          ay *= this.thrust;
+          this.vx += ax;
+          this.vy += ay;
+          this.x += this.vx;
+          this.y += this.vy;
+          this.vx *= 1 - this.afterburn;
+          this.vy *= 1 - this.afterburn;
+          if (this.wcharge < this.wcharge_cap) return this.wcharge += 1;
+        },
+        initialize: function() {
+          return this.init();
+        },
+        blit: function() {
+          return gbox.blitAll(gbox.getBufferContext(), this.image, {
+            dx: Math.round(this.x - cam.x),
+            dy: Math.round(this.y - cam.y)
+          });
+        }
+      });
+    };
     addDrone = function() {
       return gbox.addObject({
         group: 'drones',
         init: function() {
+          this.deployed = false;
           this.frame = 0;
           this.tileset = 'drones_tiles';
           this.w = 5;
           this.h = 5;
-          this.x = gbox.getScreenW() / 2 - this.w / 2 - 100;
-          this.y = gbox.getScreenH() / 2 - this.h / 2 - 100;
+          this.x = player.x + player.h / 2 - this.w / 2;
+          this.y = player.y + player.h / 2 - this.h / 2;
           this.vx = 0;
           this.vy = 0;
           this.ang = Math.random() * Math.PI * 2;
@@ -191,8 +292,8 @@
           return gbox.blitTile(gbox.getBufferContext(), {
             tileset: this.tileset,
             tile: this.frame,
-            dx: Math.round(this.x),
-            dy: Math.round(this.y)
+            dx: Math.round(this.x - cam.x),
+            dy: Math.round(this.y - cam.y)
           });
         }
       });
@@ -240,8 +341,8 @@
           return gbox.blitTile(gbox.getBufferContext(), {
             tileset: this.tileset,
             tile: this.frame,
-            dx: Math.round(this.x),
-            dy: Math.round(this.y)
+            dx: Math.round(this.x - cam.x),
+            dy: Math.round(this.y - cam.y)
           });
         }
       });
@@ -269,14 +370,14 @@
         },
         blit: function() {
           return gbox.blitAll(gbox.getBufferContext(), gbox.getImage('planet0'), {
-            dx: Math.round(this.x + this.xoff),
-            dy: Math.round(this.y + this.yoff)
+            dx: Math.round(this.x + this.xoff - cam.x),
+            dy: Math.round(this.y + this.yoff - cam.y)
           });
         }
       });
     };
     main = function() {
-      gbox.setGroups(['background', 'game', 'planet', 'drones', 'player', 'friend_shots', 'foe_shots']);
+      gbox.setGroups(['background', 'game', 'planet', 'player', 'baddies', 'drones', 'friend_shots', 'foe_shots']);
       maingame = gamecycle.createMaingame('game', 'game');
       maingame.gameMenu = function() {
         return true;
@@ -299,9 +400,11 @@
       };
       maingame.initializeGame = function() {
         player = addPlayer();
+        cam = addCamera();
         addDrone();
         addDrone();
         addPlanet();
+        addBaddie();
         return gbox.addObject({
           id: 'bg_id',
           group: 'background',
@@ -312,8 +415,8 @@
               alpha: 1
             });
             return gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
-              dx: 0,
-              dy: 0
+              dx: -cam.x,
+              dy: -cam.y
             });
           }
         });
