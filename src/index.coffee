@@ -14,9 +14,7 @@ html ->
       content:'width:device-width; initial-scale:1.0; maximum-scale:1.0; user-scalable:0;'
   body ->
     div class:'directions', ->
-      span 'MOVE: LEFT/RIGHT'
-      br ''
-      span 'SHOOT: Z/X'
+      text ''
   coffeescript ->
     frand = (min, max) -> min + Math.random()*(max-min)
     window.rand = (min, max) -> Math.round(frand(min, max))
@@ -28,7 +26,7 @@ html ->
       help.akihabaraInit
         title: 'TINY UNIVERSE (working title)'
         width: 320
-        height: 200
+        height: 320
         zoom: 2
 
       gbox.setFps 60
@@ -57,9 +55,9 @@ html ->
         gapy: 0
       gbox.loadAll main
     
-    TURN_SPEED = 0.025
-    ACC = 0.0185
-    DEC = 0.01
+    TURN_SPEED = 0.05
+    ACC = 0.005
+    DEC = 0.004
     addPlayer = ->
       gbox.addObject
         id: 'player_id'
