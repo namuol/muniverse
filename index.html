@@ -1,5 +1,5 @@
 <html><head><script type="text/javascript" src="akihabara/gbox.js"></script><script type="text/javascript" src="akihabara/iphopad.js"></script><script type="text/javascript" src="akihabara/trigo.js"></script><script type="text/javascript" src="akihabara/toys.js"></script><script type="text/javascript" src="akihabara/help.js"></script><script type="text/javascript" src="akihabara/tool.js"></script><script type="text/javascript" src="akihabara/gamecycle.js"></script><link rel="stylesheet" href="style.css" /><meta name="viewport" content="width:device-width; initial-scale:1.0; maximum-scale:1.0; user-scalable:0;" /></head><body><div class="directions"></div></body><script>var __slice = Array.prototype.slice;var __hasProp = Object.prototype.hasOwnProperty;var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };var __extends = function(child, parent) {  for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }  function ctor() { this.constructor = child; }  ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype;  return child; };var __indexOf = Array.prototype.indexOf || function(item) {  for (var i = 0, l = this.length; i < l; i++) {    if (this[i] === item) return i;  } return -1; };(function () {
-    var ACC, DEC, TURN_SPEED, addDrone, addPlayer, choose, frand, loadResources, main, maingame, player;
+    var ACC, DEC, TURN_SPEED, addDrone, addPlanet, addPlayer, choose, frand, loadResources, main, maingame, player;
     frand = function(min, max) {
       return min + Math.random() * (max - min);
     };
@@ -18,6 +18,7 @@
         zoom: 2
       });
       gbox.setFps(60);
+      gbox.addImage('bg', 'bg.png');
       gbox.addImage('logo', 'logo.png');
       gbox.addImage('ship0', 'ship0.png');
       gbox.addTiles({
@@ -29,6 +30,7 @@
         gapx: 0,
         gapy: 0
       });
+      gbox.addImage('planet0', 'planet0.png');
       gbox.addImage('drones', 'drones.png');
       gbox.addTiles({
         id: 'drones_tiles',
@@ -146,8 +148,37 @@
         }
       });
     };
+    addPlanet = function() {
+      return gbox.addObject({
+        group: 'planet',
+        init: function() {
+          this.tileset = 'drones_tiles';
+          this.w = 100;
+          this.h = 100;
+          this.x = gbox.getScreenW() / 2 - this.w / 2;
+          this.y = gbox.getScreenH() / 2 - this.h / 2;
+          this.ang = 0;
+          this.xoff = 0;
+          this.yoff = 0;
+          return this.dist = 3;
+        },
+        first: function() {
+          this.ang += 0.02;
+          return this.yoff = Math.sin(this.ang);
+        },
+        initialize: function() {
+          return this.init();
+        },
+        blit: function() {
+          return gbox.blitAll(gbox.getBufferContext(), gbox.getImage('planet0'), {
+            dx: Math.round(this.x + this.xoff),
+            dy: Math.round(this.y + this.yoff)
+          });
+        }
+      });
+    };
     main = function() {
-      gbox.setGroups(['background', 'game', 'drones', 'player']);
+      gbox.setGroups(['background', 'game', 'planet', 'drones', 'player']);
       maingame = gamecycle.createMaingame('game', 'game');
       maingame.gameMenu = function() {
         return true;
@@ -171,14 +202,20 @@
       maingame.initializeGame = function() {
         player = addPlayer();
         addDrone();
+        addDrone();
+        addPlanet();
         return gbox.addObject({
           id: 'bg_id',
           group: 'background',
           color: 'rgb(0,0,0)',
           blit: function() {
-            return gbox.blitFade(gbox.getBufferContext(), {
-              color: '#002233',
+            gbox.blitFade(gbox.getBufferContext(), {
+              color: '#000510',
               alpha: 1
+            });
+            return gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
+              dx: 0,
+              dy: 0
             });
           }
         });
