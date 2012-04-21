@@ -57,41 +57,48 @@ html ->
         gapy: 0
       gbox.loadAll main
     
-    TURN_SPEED = 0.05
+    TURN_SPEED = 0.025
+    ACC = 0.05
+    DEC = 0.01
     addPlayer = ->
       gbox.addObject
         id: 'player_id'
         group: 'player'
         speed: 3
         bullets: []
-        sprite: 'ship0'
         init: ->
-          @w = gbox.getImage(@sprite).width
-          @h = gbox.getImage('player_sprite').height
+          @frame = 0
+          @tileset = 'ship0_tiles'
+          @w = 16
+          @h = 16
           @x = gbox.getScreenW()/2 - @w/2
-          @y = FLOOR - @h
+          @y = gbox.getScreenH()/2 - @h/2
           @vx = 0
           @vy = 0
-          @ang = 0
+          @ang = Math.PI/3
 
         first: ->
           if gbox.keyIsPressed 'up'
-            @vx += Math.cos @ang
-            @vy += Math.sin @ang
+            @vx += Math.cos(@ang) * ACC
+            @vy += Math.sin(@ang) * ACC
 
           if gbox.keyIsPressed 'right'
             @ang += TURN_SPEED
           else if gbox.keyIsPressed 'left'
             @ang -= TURN_SPEED
-
           @x += @vx
           @y += @vy
+
+          @vx *= 1-DEC
+          @vy *= 1-DEC
 
         initialize: ->
           @init()
 
         blit: ->
-          gbox.blitAll gbox.getBufferContext(), gbox.getImage('player_sprite'),
+          gbox.blitTile gbox.getBufferContext(),
+            tileset: @tileset
+            tile: @frame
             dx: Math.round @x
             dy: Math.round @y
 
@@ -117,6 +124,14 @@ html ->
       maingame.initializeGame = ->
         player = addPlayer()
 
+        gbox.addObject
+          id: 'bg_id'
+          group: 'background'
+          color: 'rgb(0,0,0)'
+          blit: ->
+            gbox.blitFade gbox.getBufferContext(),
+              color:'black'
+              alpha:1
       gbox.go()
 
     window.addEventListener 'load', loadResources, false
