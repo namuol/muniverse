@@ -41,7 +41,7 @@ html ->
         image: 'ship0'
         tileh: 16
         tilew: 16
-        tilerow: 4
+        tilerow: 16
         gapx: 0
         gapy: 0
 
@@ -75,7 +75,7 @@ html ->
           @y = gbox.getScreenH()/2 - @h/2
           @vx = 0
           @vy = 0
-          @ang = Math.PI/3
+          @ang = 0
 
         first: ->
           if gbox.keyIsPressed 'up'
@@ -91,6 +91,7 @@ html ->
 
           @vx *= 1-DEC
           @vy *= 1-DEC
+          @frame = Math.round(((@ang+(Math.PI/2)) / (Math.PI*2)) * 16) % 16
 
         initialize: ->
           @init()
