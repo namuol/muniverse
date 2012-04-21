@@ -494,7 +494,7 @@ html ->
 
           # Sunlight direction:
           @dirx = frand(-@radius,@radius)
-          @diry = frand(-@radius*.5,@radius*.5)
+          @diry = frand(-@radius*.1,@radius*.1)
 
         first: ->
           return if paused
@@ -511,7 +511,7 @@ html ->
           x = Math.round @x+@xoff-cam.x
           y = Math.round @y+@yoff-cam.y
           ctx.beginPath()
-          grd = ctx.createRadialGradient x+@dirx,y+@diry, 0, x+@dirx,y+@diry, @radius
+          grd = ctx.createRadialGradient x+@dirx,y+@diry, 0, x+@dirx,y+@diry, @radius*1.4
           grd.addColorStop 0, '#224455'
           grd.addColorStop 1, '#000510'
           ctx.fillStyle = grd
