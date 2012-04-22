@@ -1,11 +1,11 @@
 #!/bin/sh
 mkdir -p deploy
-cp -r akihabara index.html style.css *.png deploy/.
+cp -r akihabara seedrandom-min.js index.html style.css *.png deploy/.
 
 git checkout gh-pages
 mv deploy/* .
 mv deploy/akihabara/* akihabara/.
-git add akihabara index.html style.css *.png
+git add akihabara seedrandom-min.js index.html style.css *.png
 
 rm -rf deploy
 git commit -am 'auto-deploy'
