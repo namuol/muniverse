@@ -31,7 +31,7 @@ html ->
     rand = (min, max) -> Math.round(frand(min, max))
     choose = (array) -> array[rand(0,array.length-1)]
 
-    rgba = (r,g,b,a) -> "rgba(#{r},#{g},#{b},#{a}"
+    rgba = (c) -> "rgba(#{c[0]},#{c[1]},#{c[2]},#{c[3]})"
     getPixel = (img, x,y) ->
       pos = (x + y * img.width) * 4
       r = img.data[pos]
@@ -191,7 +191,6 @@ html ->
     
     paused = false
     menuVisible = false
-    player = undefined
     cam = {
       x:0
       y:0
@@ -383,6 +382,7 @@ html ->
     BASE_WSPEED = 2
     BASE_WPOWER = 1
     BASE_WSPAN = 80
+    player = undefined
     class Player
       constructor: (name) ->
         @wcharge_cap = BASE_WCHARGE_CAP
@@ -397,6 +397,9 @@ html ->
 
         @cargo =
           fuel: 4
+
+      fuel: ->
+        return @cargo.fuel
 
       id: 'player_id'
       group: 'player'
@@ -698,67 +701,33 @@ html ->
         @y = y
         @color = color
 
-      visit: ->
-        Math.seedrandom BASE_SEED+'.'+sector.x+'.'+sector.y+'.'+x+'.'+y
+      generate_planets: ->
+        Math.seedrandom BASE_SEED+'.'+@sector.x+'.'+@sector.y+'.'+@x+'.'+@y
         @radius = frand MIN_STAR_RAD, MAX_STAR_RAD
         @planets = []
-        pcount = rand 0, MAX_STAR_PLANETS*MAX_STAR_PLANETS
+        pcount = rand 0,MAX_STAR_PLANETS
+        p=0
+        while p < pcount
+          @planets.push new Planet false, p/pcount
+          ++p
 
-    PLANET_CLASSES =
-      gas_giant:
-        prob: 0.3
-        min_radius: 60
-        max_radius: 120
-        min_moons: 0
-        max_moons: 8
-        min_orbit: 0.5
-        max_orbit: 1.0
-        ring_prob: 0.25
+      planet_count: ->
+        return undefined if @planets is undefined
+        count = 0
+        for planet in @planets
+          count += planet.count()
+        return count
 
-      rocky:
-        prob: 0.7
-        min_radius: 20
-        max_radius: 60
-        min_orbit: 0.15
-        max_orbit: 1.0
-        min_moons: 0
-        max_moons: 3
-        ring_prob: 0.1
-
-      moon:
-        min_radius: 10
-        max_radius: 20
-        ring_prob: 0
-
-    class Planet
-      constructor: (moon) ->
-        if moon
-          @ptype = 'moon'
-        else if Math.random() < PLANET_CLASSES.gas_giant.prob
-          @ptype = 'gas_giant'
-        else
-          @ptype = 'rocky'
-
-        cls = PLANET_CLASSES[@ptype]
-
-        @radius = frand cls.min_radius, cls.max_radius
-
-        return if moon
-        @moons = []
-        mcount = rand cls.min_moons, cls.max_moons
-        m=0
-        while m < mcount
-          @moons.push new Planet true
-          ++m
-    
+    LY_SCALE = 0.25
     starmap = undefined
-
     class Starmap
       constructor: (x,y, density) ->
         @sector =
           x:x
           y:y
-          
+        @cursor =
+          x:0
+          y:0
         Math.seedrandom BASE_SEED+x+','+y
 
         # Generate stars!
@@ -782,26 +751,62 @@ html ->
 
       first: ->
         return if paused
+        y=@cursor.y
+        x=@cursor.x
+        if gbox.keyIsPressed 'up'
+          @cursor.y -= 0.5
+        else if gbox.keyIsPressed 'down'
+          @cursor.y += 0.5
+        if gbox.keyIsPressed 'left'
+          @cursor.x -= 0.5
+        else if gbox.keyIsPressed 'right'
+          @cursor.x += 0.5
+
+        if !@closest_star or @cursor.x != x or @cursor.y != y
+          @closest_star = @closest(@cursor.x,@cursor.y)
+          dx = @current_star.x-@closest_star.x
+          dy = @current_star.y-@closest_star.y
+          @closest_star.dist = Math.sqrt(dx*dx+dy*dy)*LY_SCALE
+
 
       blit: ->
         c = gbox.getBufferContext()
         if c
           c.putImageData @starmap, 0, 0
-          ###
-          gbox.blitText gbox.getBufferContext(),
-            font: 'small'
-            text:"SEC: #{@sector.x},#{@sector.y}"
-            dx:1
-            dy:H-12
-            dw:64
-            dh:16
-          ###
           if @current_star
-            gbox.blitTile gbox.getBufferContext(),
+            gbox.blitText c,
+              font: 'small'
+              text:"LY: #{Math.round(@closest_star.dist*100)/100}"
+              dx:1
+              dy:H-12
+              dw:64
+              dh:16
+
+            gbox.blitTile c,
               tileset: 'cursors'
               tile: 0
               dx: Math.round(@current_star.x)-4
               dy: Math.round(@current_star.y)-4
+            gbox.blitTile c,
+              tileset: 'cursors'
+              tile: 1
+              dx: Math.round(@cursor.x)-4
+              dy: Math.round(@cursor.y)-4
+            gbox.blitTile c,
+              tileset: 'cursors'
+              tile: 2
+              dx: Math.round(@closest_star.x)-4
+              dy: Math.round(@closest_star.y)-4
+            c.strokeStyle = '#d97777'
+            c.beginPath()
+            c.arc(
+              Math.round(@current_star.x),
+              Math.round(@current_star.y),
+              player.fuel()/LY_SCALE,
+              0, 2*Math.PI, false
+            )
+            c.stroke()
+
       group: 'starmap'
       closest: (x,y) ->
         minD2 = 999999
@@ -815,62 +820,162 @@ html ->
             ret = star
         return ret
 
-    addPlanetMap = (star) ->
-      gbox.addObject
-        group: 'starmap'
-        init: ->
+    GAS_GIANT_MIN_ORBIT = 0.5
+    PLANET_CLASSES =
+      gas_giant:
+        prob: 0.5
+        min_radius: 60
+        max_radius: 120
+        min_moons: 0
+        max_moons: 8
+        min_orbit: 0.5
+        max_orbit: 1.0
+        ring_prob: 0.25
 
-        first: ->
+      rocky:
+        prob: 0.5
+        min_radius: 20
+        max_radius: 60
+        min_orbit: 0.15
+        max_orbit: 1.0
+        min_moons: 0
+        max_moons: 3
+        ring_prob: 0.1
 
-        initialize: ->
-          @init()
+      moon:
+        min_radius: 10
+        max_radius: 20
+        ring_prob: 0
 
-        blit: ->
-          c = gbox.getBufferContext()
-          if c
-            c.putImageData @map, 0, 0
+    class Planet
+      constructor: (moon, orbit) ->
+        if moon
+          @ptype = 'moon'
+          @color = rgba choose planetcolors[2]
+        else if orbit < GAS_GIANT_MIN_ORBIT and Math.random() < PLANET_CLASSES.gas_giant.prob
+          @ptype = 'gas_giant'
+          @color = rgba choose planetcolors[1]
+        else
+          @ptype = 'rocky'
+          @color = rgba choose planetcolors[0]
+
+        cls = PLANET_CLASSES[@ptype]
+
+        @radius = frand cls.min_radius, cls.max_radius
+
+        @moons = []
+        return if moon
+        mcount = rand cls.min_moons, cls.max_moons
+        m=0
+        while m < mcount
+          @moons.push new Planet true
+          ++m
+
+      count: ->
+        return 1 + @moons.length
+
+      group: 'planet'
+      init: (x,y) ->
+        @x = x#gbox.getScreenW()/2 - @w/2
+        @y = y#gbox.getScreenH()/2 - @h/2
+        @ang = 0
+        @xoff = 0
+        @yoff = 0
+        @dist = 3
+
+        # Sunlight direction:
+        @dirx = frand(-@radius,@radius)
+        @diry = frand(-@radius*.1,@radius*.1)
+
+      first: ->
+        return if paused
+        @ang += 0.02 #Math.random() * Math.PI*2
+        @yoff = 3*Math.sin @ang
+
+      initialize: ->
+        @init(W/2-@radius, H/2-@radius)
+
+      render: (scale, x,y, dirx,diry) ->
+        ctx = gbox.getBufferContext()
+        return if not ctx
+        radius = @radius * scale
+        dirx *= scale
+        diry *= scale
+        ctx.beginPath()
+        grd = ctx.createRadialGradient x+dirx,y+diry, 0, x+dirx,y+diry, @radius*1.4
+        grd.addColorStop 0, @color
+        grd.addColorStop 1, '#000510'
+        ctx.fillStyle = grd
+        ctx.arc x,y, radius, 0, 2*Math.PI, false
+        ctx.fill()
+        ctx.closePath()
+
+      blit: ->
+        x = Math.round @x+@xoff-cam.x
+        y = Math.round @y+@yoff-cam.y
+        @render 1.0, x,y, @dirx, @diry
     
-    addPlanet = (planet) ->
-      gbox.addObject
-        group: 'planet'
-        radius: planet.radius
-        init: ->
-          @tileset = 'drones_tiles'
-          @w = 100
-          @h = 100
-          @x = gbox.getScreenW()/2 - @w/2
-          @y = gbox.getScreenH()/2 - @h/2
-          @ang = 0
-          @xoff = 0
-          @yoff = 0
-          @dist = 3
+    planetmap = undefined
+    class Planetmap
+      group: 'planetmap'
+      constructor: (star) ->
+        @star = star
+        @tick = 0
 
-          # Sunlight direction:
-          @dirx = frand(-@radius,@radius)
-          @diry = frand(-@radius*.1,@radius*.1)
+      first: ->
+        return if paused
+        if gbox.keyIsPressed 'b'
+          # TODO RETURN TO STARMAP
 
-        first: ->
-          return if paused
-          @ang += 0.02 #Math.random() * Math.PI*2
-          #@xoff = Math.cos @ang
-          @yoff = 3*Math.sin @ang
+        ###
+        y=@cursor.y
+        x=@cursor.x
+        if gbox.keyIsPressed 'up'
+          @cursor.y -= 0.5
+        else if gbox.keyIsPressed 'down'
+          @cursor.y += 0.5
+        if gbox.keyIsPressed 'left'
+          @cursor.x -= 0.5
+        else if gbox.keyIsPressed 'right'
+          @cursor.x += 0.5
 
-        initialize: ->
-          @init()
+        if !@closest_star or @cursor.x != x or @cursor.y != y
+          @closest_star = @closest(@cursor.x,@cursor.y)
+          dx = @current_star.x-@closest_star.x
+          dy = @current_star.y-@closest_star.y
+          @closest_star.dist = Math.sqrt(dx*dx+dy*dy)*LY_SCALE
+        ###
+      blit: ->
+        c = gbox.getBufferContext()
+        if c
+          gbox.blitAll c, gbox.getImage('starmap_gui'),
+            dx:0
+            dy:0
 
-        blit: ->
-          ctx = gbox.getBufferContext()
-          return if not ctx
-          x = Math.round @x+@xoff-cam.x
-          y = Math.round @y+@yoff-cam.y
-          ctx.beginPath()
-          grd = ctx.createRadialGradient x+@dirx,y+@diry, 0, x+@dirx,y+@diry, @radius*1.4
-          grd.addColorStop 0, '#224455'
-          grd.addColorStop 1, '#000510'
-          ctx.fillStyle = grd
-          ctx.arc x,y, @radius, 0, 2*Math.PI, false
-          ctx.fill()
-          ctx.closePath()
+          y = H/2
+          p=0
+
+          gbox.blitText c,
+            font: 'small'
+            text: "PLANETS: #{@star.planet_count()}"
+            dx:1
+            dy:H-12
+            dw:64
+            dh:16
+
+          for planet in @star.planets
+            x = W*0.1 + (W*0.8) * ((p+1)/@star.planets.length)
+            planet.render 0.25, x,y, -planet.radius*2,0
+            m=1
+            for moon in planet.moons
+              moon.render 0.25,
+                x,
+                y+(planet.radius*0.5+m*PLANET_CLASSES.moon.max_radius)*0.5,
+                -moon.radius*2,0
+              ++m
+            ++p
+
+
 
     PARTICLES = {
       fire:
@@ -1014,6 +1119,7 @@ html ->
         'background'
         'game'
         'starmap'
+        'planetmap'
         'planet'
         'resources'
         'particles'
@@ -1046,10 +1152,17 @@ html ->
 
       maingame.initializeGame = ->
         addPauseScreen()
+        player = new Player
         starmap = new Starmap 5,34,0.6
         starmap.current_star = choose starmap.stars
+        starmap.cursor =
+          x: starmap.current_star.x
+          y: starmap.current_star.y
+        starmap.current_star.generate_planets()
+        planetmap = new Planetmap starmap.current_star
 
         gbox.addObject starmap
+        gbox.addObject planetmap
 
         gbox.addObject
           id: 'bg_id'
