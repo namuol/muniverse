@@ -116,6 +116,16 @@ html ->
           image: 'resources'
           tileh: 1
           tilew: 1
+          tilerow: 8
+          gapx: 0
+          gapy: 0
+
+        gbox.addImage 'particles', 'particles.png'
+        gbox.addTiles
+          id: 'particles_tiles'
+          image: 'particles'
+          tileh: 1
+          tilew: 1
           tilerow: 16
           gapx: 0
           gapy: 0
@@ -261,7 +271,6 @@ html ->
             else if gbox.keyIsHit 'down'
               currentMenu.down()
 
-
           blit: ->
             return if not menuVisible
 
@@ -291,7 +300,7 @@ html ->
                 dy:top
                 dw:W
                 dh:16
-                halign: gbox.ALIGN_CENTER
+                halign: gbox.ALIGN_LEFT
                 valign: gbox.ALIGN_TOP
                 alpha:alpha
 
@@ -345,6 +354,7 @@ html ->
             @thrust = 0.01
             @afterburn = 0.01
             @shields = 5
+            @particle_tick=0
 
           first: ->
             return if paused
@@ -373,7 +383,10 @@ html ->
             @y += @vy
 
             @frame = Math.round(((@ang+(Math.PI/2)) / (Math.PI*2)) * 16) % 16
-            @frame += 16 if going
+            if going
+              @frame += 16
+              if ++@particle_tick % 4 is 0
+                addParticle 'fire', @x+@w/2,@y+@h/2, @vx-@ax*40*frand(0.5,1),@vy-@ay*40*frand(0.5,1)
 
             if gbox.keyIsHit('a') and (@wcharge >= @wcost)
               @wcharge -= @wcost
@@ -388,6 +401,11 @@ html ->
               @wcharge += 1
 
             groupCollides @, 'foe_shots', (shot) =>
+              i=0
+              while i < 3
+                addParticle 'fire', @x+@w/2,@y+@h/2,
+                  @vx+frand(-.5,.5),@vy+frand(-.5,.5)
+                ++i
               @shields -= shot.power
               shot.die()
 
@@ -480,8 +498,27 @@ html ->
 
             groupCollides @, 'friend_shots', (shot) =>
               @shields -= shot.power
+              i=0
+              while i < 3
+                addParticle 'fire', @x+@w/2,@y+@h/2,
+                  @vx+frand(-0.5,0.5),@vy+frand(-.5,.5)
+                ++i
+              addParticle 'wreckage', @x+@w/2,@y+@h/2,
+                @vx+frand(-0.5,0.5),@vy+frand(-.5,.5)
+
               if @shields < 0
                 @die()
+                i=0
+                while i < 20
+                  addParticle 'fire', @x+@w/2,@y+@h/2,
+                    @vx+frand(-1,1),@vy+frand(-1,1)
+                  ++i
+                i=0
+                while i < 12
+                  addParticle 'wreckage', @x+@w/2,@y+@h/2,
+                    @vx+frand(-0.5,0.5),@vy+frand(-.5,.5)
+                  ++i
+
               shot.die()
 
           initialize: ->
@@ -716,12 +753,151 @@ html ->
               dy: Math.round(@y + @yoff - cam.y)
             ###
 
+      PARTICLES = {
+        fire:
+          num:0
+          lifespan:60
+          randomframe:false
+          frame_length:60/16
+        wreckage:
+          num:1
+          lifespan:200
+          frame_length:4
+          randomframe:true
+      }
+
+      addParticle = (name, x,y, vx,vy) ->
+        gbox.addObject
+          group: 'particles'
+          num:PARTICLES[name].num
+          lifespan:PARTICLES[name].lifespan
+          w:0.1
+          h:0.1
+          vx:0
+          vy:0
+          init: ->
+            @frame_length = PARTICLES[name].frame_length
+            @next_frame = @frame_length
+            @frame = @num*16
+            if PARTICLES[name].randomframe
+              @frame += rand(0,15)
+            @tileset = 'particles_tiles'
+            @w = 3
+            @h = 3
+            if vx and vy
+              @vx = vx
+              @vy = vy
+            @tick = 0
+            @x = x
+            @y = y
+
+          die: ->
+            gbox.trashObject @
+
+          first: ->
+            return if paused
+            @x += @vx
+            @y += @vy
+            --@next_frame
+            if @next_frame < 0
+              @frame = @num*16 + ((@frame%16) + 1)%16
+              @next_frame = @frame_length
+            ++@tick
+
+            if @tick > @lifespan
+              @die()
+
+          initialize: ->
+            @init()
+
+          blit: ->
+            gbox.blitTile gbox.getBufferContext(),
+              tileset: @tileset
+              tile: @frame
+              dx: Math.round(@x-cam.x)
+              dy: Math.round(@y-cam.y)
+
+      RESOURCES = {
+        'SCRAP METAL':
+          num:0
+          tons_per_unit:1
+        'LIFEFORMS':
+          num:1
+          tons_per_unit:0.05
+        'FUEL':
+          num:2
+          tons_per_unit:0.25
+        'MINERALS':
+          num:3
+          tons_per_unit:0.1
+        'NARCOTICS':
+          num:4
+          tons_per_unit:0.01
+      }
+
+      addResource = (name, x,y, vx,vy, planet) ->
+        num = RESOURCES[name].num
+
+        gbox.addObject
+          group: 'resources'
+          num:num
+          w:0.1
+          h:0.1
+          vx:0
+          vy:0
+          frame_length: 4
+          init: ->
+            @next_frame = @frame_length
+            @frame = rand @num*8, @num*8 + 8
+            @tileset = 'resources_tiles'
+            @w = 3
+            @h = 3
+            if vx and vy
+              @vx = vx
+              @vy = vy
+            @tick = 0
+            @x = x
+            @y = y
+
+          die: ->
+            gbox.trashObject @
+
+          first: ->
+            return if paused
+
+            if planet
+              @x = planet.x + x
+              @y = planet.y + y
+            else
+              @x += @vx
+              @y += @vy
+              @vx *= 0.005
+              @vy *= 0.005
+
+            --@next_frame
+
+            if @next_frame < 0
+              @frame = @num*8 + ((@frame%8) + 1)%8
+              @next_frame = @frame_length
+
+          initialize: ->
+            @init()
+
+          blit: ->
+            gbox.blitTile gbox.getBufferContext(),
+              tileset: @tileset
+              tile: @frame
+              dx: Math.round(@x-cam.x)
+              dy: Math.round(@y-cam.y)
+
       main = ->
         gbox.setGroups [
           'background'
           'game'
           'starmap'
           'planet'
+          'resources'
+          'particles'
           'player'
           'friend_shots'
           'baddies'
@@ -766,33 +942,33 @@ html ->
                 alpha:1
 
               gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-                dx:-cam.x % W
-                dy:-cam.y % H
+                dx:Math.round -cam.x % W
+                dy:Math.round -cam.y % H
 
               gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-                dx:-cam.x % W - W
-                dy:-cam.y % H - H
+                dx:Math.round -cam.x % W - W
+                dy:Math.round -cam.y % H - H
               gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-                dx:-cam.x % W
-                dy:-cam.y % H - H
+                dx:Math.round -cam.x % W
+                dy:Math.round -cam.y % H - H
               gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-                dx:-cam.x % W + W
-                dy:-cam.y % H - H
+                dx:Math.round -cam.x % W + W
+                dy:Math.round -cam.y % H - H
               gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-                dx:-cam.x % W + W
-                dy:-cam.y % H
+                dx:Math.round -cam.x % W + W
+                dy:Math.round -cam.y % H
               gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-                dx:-cam.x % W + W
-                dy:-cam.y % H + H
+                dx:Math.round -cam.x % W + W
+                dy:Math.round -cam.y % H + H
               gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-                dx:-cam.x % W
-                dy:-cam.y % H + H
+                dx:Math.round -cam.x % W
+                dy:Math.round -cam.y % H + H
               gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-                dx:-cam.x % W - W
-                dy:-cam.y % H + H
+                dx:Math.round -cam.x % W - W
+                dy:Math.round -cam.y % H + H
               gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-                dx:-cam.x % W - W
-                dy:-cam.y % H
+                dx:Math.round -cam.x % W - W
+                dy:Math.round -cam.y % H
 
         gbox.go()
         gbox.stopGroup 'starmap'
