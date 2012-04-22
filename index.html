@@ -1,607 +1,811 @@
-<html><head><script type="text/javascript" src="akihabara/gbox.js"></script><script type="text/javascript" src="akihabara/iphopad.js"></script><script type="text/javascript" src="akihabara/trigo.js"></script><script type="text/javascript" src="akihabara/toys.js"></script><script type="text/javascript" src="akihabara/help.js"></script><script type="text/javascript" src="akihabara/tool.js"></script><script type="text/javascript" src="akihabara/gamecycle.js"></script><link rel="stylesheet" href="style.css" /><meta name="viewport" content="width:device-width; initial-scale:1.0; maximum-scale:1.0; user-scalable:0;" /></head><body><div class="directions"></div></body><script>var __slice = Array.prototype.slice;var __hasProp = Object.prototype.hasOwnProperty;var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };var __extends = function(child, parent) {  for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }  function ctor() { this.constructor = child; }  ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype;  return child; };var __indexOf = Array.prototype.indexOf || function(item) {  for (var i = 0, l = this.length; i < l; i++) {    if (this[i] === item) return i;  } return -1; };(function () {
-    var ACC, DEC, H, TURN_SPEED, W, addBaddie, addCamera, addDrone, addPauseScreen, addPlanet, addPlayer, addShot, cam, choose, currentMenu, frand, loadResources, main, maingame, paused, player, rootMenu, togglePause;
+<html><head><script type="text/javascript" src="akihabara/gbox.js"></script><script type="text/javascript" src="akihabara/iphopad.js"></script><script type="text/javascript" src="akihabara/trigo.js"></script><script type="text/javascript" src="akihabara/toys.js"></script><script type="text/javascript" src="akihabara/help.js"></script><script type="text/javascript" src="akihabara/tool.js"></script><script type="text/javascript" src="akihabara/gamecycle.js"></script><script type="text/javascript" src="seedrandom-min.js"></script><link rel="stylesheet" href="style.css" /><meta name="viewport" content="width:device-width; initial-scale:1.0; maximum-scale:1.0; user-scalable:0;" /></head><body><div class="directions"></div><canvas width="327" height="1" style="display:none" id="starcolors"></canvas><canvas width="320" height="320" style="display:none" id="starmap"></canvas></body><script>var __slice = Array.prototype.slice;var __hasProp = Object.prototype.hasOwnProperty;var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };var __extends = function(child, parent) {  for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }  function ctor() { this.constructor = child; }  ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype;  return child; };var __indexOf = Array.prototype.indexOf || function(item) {  for (var i = 0, l = this.length; i < l; i++) {    if (this[i] === item) return i;  } return -1; };(function () {
+    var BASE_SEED, choose, frand, getPixel, rand, rgba, setPixel, starcolors_el;
+    BASE_SEED = 'WEEEEE';
+    Math.seedrandom(BASE_SEED);
+    window.clamp = function(num, min, max) {
+      return Math.min(Math.max(num, min), max);
+    };
     frand = function(min, max) {
       return min + Math.random() * (max - min);
     };
-    window.rand = function(min, max) {
+    rand = function(min, max) {
       return Math.round(frand(min, max));
     };
     choose = function(array) {
       return array[rand(0, array.length - 1)];
     };
-    maingame = void 0;
-    W = 320;
-    H = 320;
-    loadResources = function() {
-      help.akihabaraInit({
-        title: 'TINY UNIVERSE (working title)',
-        width: W,
-        height: H,
-        zoom: 2
-      });
-      gbox.setFps(60);
-      gbox.addImage('bg', 'bg.png');
-      gbox.addImage('logo', 'logo.png');
-      gbox.addImage('ship0', 'ship0.png');
-      gbox.addTiles({
-        id: 'ship0_tiles',
-        image: 'ship0',
-        tileh: 8,
-        tilew: 8,
-        tilerow: 16,
-        gapx: 0,
-        gapy: 0
-      });
-      gbox.addImage('bad0', 'bad0.png');
-      gbox.addImage('planet0', 'planet0.png');
-      gbox.addImage('drones', 'drones.png');
-      gbox.addTiles({
-        id: 'drones_tiles',
-        image: 'drones',
-        tileh: 5,
-        tilew: 5,
-        tilerow: 3,
-        gapx: 0,
-        gapy: 0
-      });
-      gbox.addImage('resources', 'resources.png');
-      gbox.addTiles({
-        id: 'resources_tiles',
-        image: 'resources',
-        tileh: 1,
-        tilew: 1,
-        tilerow: 16,
-        gapx: 0,
-        gapy: 0
-      });
-      gbox.addImage('shots', 'shots.png');
-      gbox.addTiles({
-        id: 'shots_tiles',
-        image: 'shots',
-        tileh: 3,
-        tilew: 3,
-        tilerow: 9,
-        gapx: 0,
-        gapy: 0
-      });
-      gbox.addImage('font', 'font.png');
-      gbox.addFont({
-        id: 'small',
-        image: 'font',
-        firstletter: 'A',
-        tileh: 8,
-        tilew: 8,
-        tilerow: 13,
-        gapx: 0,
-        gapy: 0
-      });
-      return gbox.loadAll(main);
+    rgba = function(r, g, b, a) {
+      return "rgba(" + r + "," + g + "," + b + "," + a;
     };
-    TURN_SPEED = 0.1;
-    ACC = 0.01;
-    DEC = 0.01;
-    paused = false;
-    player = void 0;
-    cam = {
-      x: 0,
-      y: 0
+    getPixel = function(img, x, y) {
+      var a, b, g, pos, r;
+      pos = (x + y * img.width) * 4;
+      r = img.data[pos];
+      g = img.data[pos + 1];
+      b = img.data[pos + 2];
+      a = img.data[pos + 3];
+      return [r, g, b, a];
     };
-    togglePause = function() {
-      return paused = !paused;
+    setPixel = function(imageData, x, y, r, g, b, a) {
+      var index;
+      index = (x + y * imageData.width) * 4;
+      imageData.data[index + 0] = r;
+      imageData.data[index + 1] = g;
+      imageData.data[index + 2] = b;
+      return imageData.data[index + 3] = a;
     };
-    rootMenu = {
-      selected: 0,
-      up: function() {
-        var _results;
-        this.selected = (this.selected - 1) % this.items.length;
-        if (this.selected < 0) this.selected = this.items.length - 1;
-        _results = [];
-        while (!this.items[this.selected].enabled) {
-          _results.push(this.selected = (this.selected - 1) % this.items.length);
+    starcolors_el = new Image();
+    starcolors_el.onload = function() {
+      var ACC, DEC, GRID_H, GRID_W, H, MAX_STAR_RAD, MIN_STAR_RAD, Menu, OFF_RADIUS, TURN_SPEED, W, addBaddie, addCamera, addDrone, addPauseScreen, addPlanet, addPlanetMap, addPlayer, addShot, addStarmap, cam, groupCollides, idx, loadResources, main, maingame, menuVisible, paused, player, rootMenu, starcolors, starcolors_canvas, starcolors_ctx, starcolors_img, starmapMenu, togglePause;
+      maingame = void 0;
+      starcolors_canvas = document.getElementById('starcolors');
+      starcolors_ctx = starcolors_canvas.getContext('2d');
+      starcolors_ctx.drawImage(starcolors_el, 0, 0);
+      starcolors_img = starcolors_ctx.getImageData(0, 0, starcolors_canvas.width, starcolors_canvas.height);
+      starcolors = [];
+      idx = 0;
+      while (idx < starcolors_el.width) {
+        starcolors.push(getPixel(starcolors_img, idx, 0));
+        ++idx;
+      }
+      W = 320;
+      H = 320;
+      groupCollides = function(obj, group, callback) {
+        var gobj, id, _ref;
+        _ref = gbox.getGroup(group);
+        for (id in _ref) {
+          if (!__hasProp.call(_ref, id)) continue;
+          gobj = _ref[id];
+          if (gbox.collides(obj, gobj)) {
+            if (callback) {
+              callback(gobj);
+            } else {
+              return true;
+            }
+          }
         }
-        return _results;
-      },
-      down: function() {
-        var _results;
-        this.selected = (this.selected + 1) % this.items.length;
-        _results = [];
-        while (!this.items[this.selected].enabled) {
-          _results.push(this.selected = (this.selected + 1) % this.items.length);
+      };
+      loadResources = function() {
+        help.akihabaraInit({
+          title: 'TINYVERSE (working title)',
+          width: W,
+          height: H,
+          zoom: 2
+        });
+        gbox.setFps(60);
+        gbox.addImage('bg', 'bg.png');
+        gbox.addImage('logo', 'logo.png');
+        gbox.addImage('ship0', 'ship0.png');
+        gbox.addTiles({
+          id: 'ship0_tiles',
+          image: 'ship0',
+          tileh: 8,
+          tilew: 8,
+          tilerow: 16,
+          gapx: 0,
+          gapy: 0
+        });
+        gbox.addImage('bad0', 'bad0.png');
+        gbox.addImage('planet0', 'planet0.png');
+        gbox.addImage('drones', 'drones.png');
+        gbox.addTiles({
+          id: 'drones_tiles',
+          image: 'drones',
+          tileh: 5,
+          tilew: 5,
+          tilerow: 3,
+          gapx: 0,
+          gapy: 0
+        });
+        gbox.addImage('resources', 'resources.png');
+        gbox.addTiles({
+          id: 'resources_tiles',
+          image: 'resources',
+          tileh: 1,
+          tilew: 1,
+          tilerow: 16,
+          gapx: 0,
+          gapy: 0
+        });
+        gbox.addImage('shots', 'shots.png');
+        gbox.addTiles({
+          id: 'shots_tiles',
+          image: 'shots',
+          tileh: 3,
+          tilew: 3,
+          tilerow: 9,
+          gapx: 0,
+          gapy: 0
+        });
+        gbox.addImage('font', 'font.png');
+        gbox.addFont({
+          id: 'small',
+          image: 'font',
+          firstletter: 'A',
+          tileh: 8,
+          tilew: 8,
+          tilerow: 13,
+          gapx: 0,
+          gapy: 0
+        });
+        return gbox.loadAll(main);
+      };
+      TURN_SPEED = 0.1;
+      ACC = 0.01;
+      DEC = 0.01;
+      paused = false;
+      menuVisible = false;
+      player = void 0;
+      cam = {
+        x: 0,
+        y: 0
+      };
+      togglePause = function() {
+        return paused = !paused;
+      };
+      Menu = (function() {
+
+        function Menu() {
+          this.selected = 0;
+          this.items = [];
         }
-        return _results;
-      },
-      select: function() {
-        console.log(this.items[this.selected].name);
-        return this.items[this.selected].select();
-      },
-      items: [
+
+        Menu.prototype.up = function() {
+          var _results;
+          this.selected = (this.selected - 1) % this.items.length;
+          if (this.selected < 0) this.selected = this.items.length - 1;
+          _results = [];
+          while (!this.items[this.selected].enabled) {
+            _results.push(this.selected = (this.selected - 1) % this.items.length);
+          }
+          return _results;
+        };
+
+        Menu.prototype.down = function() {
+          var _results;
+          this.selected = (this.selected + 1) % this.items.length;
+          _results = [];
+          while (!this.items[this.selected].enabled) {
+            _results.push(this.selected = (this.selected + 1) % this.items.length);
+          }
+          return _results;
+        };
+
+        Menu.prototype.select = function() {
+          console.log(this.items[this.selected].name);
+          return this.items[this.selected].select();
+        };
+
+        return Menu;
+
+      })();
+      starmapMenu = new Menu;
+      starmapMenu.items = [
         {
-          name: 'FLEE',
+          name: 'RETURN TO BRIDGE',
           enabled: true,
           select: function() {
-            return togglePause();
+            var g, groups, _i, _len;
+            togglePause();
+            window.currentMenu = rootMenu;
+            menuVisible = false;
+            groups = ['planet', 'player', 'baddies', 'drones', 'friend_shots', 'foe_shots'];
+            for (_i = 0, _len = groups.length; _i < _len; _i++) {
+              g = groups[_i];
+              gbox.stopGroup(g);
+              gbox.toggleGroup(g);
+            }
+            return gbox.stopGroup('starmap');
           }
-        }, {
+        }
+      ];
+      rootMenu = new Menu;
+      rootMenu.items = [
+        {
           name: 'DROP PROBE',
-          enabled: false,
+          enabled: true,
           select: function() {
+            menuVisible = false;
             return togglePause();
           }
         }, {
           name: 'STARMAP',
           enabled: true,
           select: function() {
+            var g, groups, _i, _len;
+            menuVisible = false;
+            groups = ['planet', 'player', 'baddies', 'drones', 'friend_shots', 'foe_shots'];
+            for (_i = 0, _len = groups.length; _i < _len; _i++) {
+              g = groups[_i];
+              gbox.stopGroup(g);
+            }
+            gbox.stopGroup('starmap');
+            gbox.toggleGroup('starmap');
+            window.currentMenu = starmapMenu;
+            return togglePause();
+          }
+        }, {
+          name: 'FLEE',
+          enabled: true,
+          select: function() {
+            menuVisible = false;
             return togglePause();
           }
         }
-      ]
-    };
-    currentMenu = rootMenu;
-    addPauseScreen = function() {
-      return gbox.addObject({
-        x: 0,
-        y: 0,
-        vx: 0,
-        vy: 0,
-        group: 'pause',
-        first: function() {
-          if (gbox.keyIsHit('c')) togglePause();
-          if (!paused) return;
-          if (gbox.keyIsHit('a')) {
-            currentMenu.select();
-            return;
-          }
-          if (gbox.keyIsHit('up')) {
-            return currentMenu.up();
-          } else if (gbox.keyIsHit('down')) {
-            return currentMenu.down();
-          }
-        },
-        blit: function() {
-          var alpha, height, item, num, top, _i, _len, _ref, _results;
-          if (!paused) return;
-          gbox.blitFade(gbox.getBufferContext(), {
-            alpha: 0.5
-          });
-          height = 9 * currentMenu.items.length;
-          top = H / 2 - height / 2;
-          top -= 9;
-          num = 0;
-          _ref = currentMenu.items;
-          _results = [];
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            item = _ref[_i];
-            top += 9;
-            if (item.enabled) {
-              if (currentMenu.selected === num) {
-                alpha = 1;
-              } else {
-                alpha = 0.5;
-              }
-            } else {
-              alpha = 0.25;
+      ];
+      window.currentMenu = rootMenu;
+      addPauseScreen = function() {
+        return gbox.addObject({
+          x: 0,
+          y: 0,
+          vx: 0,
+          vy: 0,
+          group: 'pause',
+          first: function() {
+            if (gbox.keyIsHit('c')) {
+              menuVisible = !menuVisible;
+              togglePause();
             }
-            ++num;
-            _results.push(gbox.blitText(gbox.getBufferContext(), {
-              font: 'small',
-              text: item.name,
-              dx: 0,
-              dy: top,
-              dw: W,
-              dh: 16,
-              halign: gbox.ALIGN_CENTER,
-              valign: gbox.ALIGN_TOP,
-              alpha: alpha
-            }));
+            if (!menuVisible) return;
+            if (gbox.keyIsHit('a')) {
+              currentMenu.select();
+              return;
+            }
+            if (gbox.keyIsHit('up')) {
+              return currentMenu.up();
+            } else if (gbox.keyIsHit('down')) {
+              return currentMenu.down();
+            }
+          },
+          blit: function() {
+            var alpha, height, item, num, top, _i, _len, _ref, _results;
+            if (!menuVisible) return;
+            gbox.blitFade(gbox.getBufferContext(), {
+              alpha: 0.5
+            });
+            height = 9 * currentMenu.items.length;
+            top = H / 2 - height / 2;
+            top -= 9;
+            num = 0;
+            _ref = currentMenu.items;
+            _results = [];
+            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+              item = _ref[_i];
+              top += 9;
+              if (item.enabled) {
+                if (currentMenu.selected === num) {
+                  alpha = 1;
+                } else {
+                  alpha = 0.5;
+                }
+              } else {
+                alpha = 0.25;
+              }
+              ++num;
+              _results.push(gbox.blitText(gbox.getBufferContext(), {
+                font: 'small',
+                text: item.name,
+                dx: 0,
+                dy: top,
+                dw: W,
+                dh: 16,
+                halign: gbox.ALIGN_CENTER,
+                valign: gbox.ALIGN_TOP,
+                alpha: alpha
+              }));
+            }
+            return _results;
           }
-          return _results;
-        }
-      });
-    };
-    addCamera = function() {
-      return gbox.addObject({
-        id: 'cam_id',
-        x: 0,
-        y: 0,
-        vx: 0,
-        vy: 0,
-        group: 'game',
-        init: function() {
-          this.x = 100;
-          this.y = 100;
-          this.vx = 0;
-          return this.vy = 0;
-        },
-        first: function() {
-          if (paused) return;
-          this.vx = (player.x + player.vx * 60 - (this.x + 160)) * 0.05;
-          this.vy = (player.y + player.vy * 60 - (this.y + 160)) * 0.05;
-          this.x += this.vx;
-          return this.y += this.vy;
-        }
-      });
-    };
-    addPlayer = function() {
-      return gbox.addObject({
-        id: 'player_id',
-        group: 'player',
-        x: 0,
-        y: 0,
-        vx: 0,
-        vy: 0,
-        init: function() {
-          this.frame = 0;
-          this.tileset = 'ship0_tiles';
-          this.w = 8;
-          this.h = 8;
-          this.x = gbox.getScreenW() / 2 - this.w / 2;
-          this.y = gbox.getScreenH() / 2 - this.h / 2;
-          this.vx = 0;
-          this.vy = 0;
-          this.ang = 0;
-          this.ax = 0;
-          this.ay = 0;
-          this.wcharge_cap = 100;
-          this.wcharge = this.wcharge_cap;
-          this.wspeed = 2;
-          this.wcost = 50;
-          this.wspan = 80;
-          this.thrust = 0.01;
-          return this.afterburn = 0.01;
-        },
-        first: function() {
-          var going;
-          if (paused) return;
-          going = false;
-          if (gbox.keyIsPressed('up')) {
-            going = true;
-            this.vx += this.ax;
-            this.vy += this.ay;
-          } else if (gbox.keyIsPressed('down')) {
+        });
+      };
+      addCamera = function() {
+        return gbox.addObject({
+          id: 'cam_id',
+          x: 0,
+          y: 0,
+          vx: 0,
+          vy: 0,
+          group: 'game',
+          init: function() {
+            this.x = 100;
+            this.y = 100;
+            this.vx = 0;
+            return this.vy = 0;
+          },
+          first: function() {
+            if (paused) return;
+            this.vx = (player.x + player.vx * 60 - (this.x + 160)) * 0.05;
+            this.vy = (player.y + player.vy * 60 - (this.y + 160)) * 0.05;
+            this.x += this.vx;
+            return this.y += this.vy;
+          }
+        });
+      };
+      addPlayer = function() {
+        return gbox.addObject({
+          id: 'player_id',
+          group: 'player',
+          x: 0,
+          y: 0,
+          vx: 0,
+          vy: 0,
+          init: function() {
+            this.frame = 0;
+            this.tileset = 'ship0_tiles';
+            this.w = 8;
+            this.h = 8;
+            this.x = gbox.getScreenW() / 2 - this.w / 2;
+            this.y = gbox.getScreenH() / 2 - this.h / 2;
+            this.vx = 0;
+            this.vy = 0;
+            this.ang = 0;
+            this.ax = 0;
+            this.ay = 0;
+            this.wcharge_cap = 100;
+            this.wcharge = this.wcharge_cap;
+            this.wspeed = 2;
+            this.wpower = 1;
+            this.wcost = 50;
+            this.wspan = 80;
+            this.thrust = 0.01;
+            this.afterburn = 0.01;
+            return this.shields = 5;
+          },
+          first: function() {
+            var going,
+              _this = this;
+            if (paused) return;
+            going = false;
+            if (gbox.keyIsPressed('up')) {
+              going = true;
+              this.vx += this.ax;
+              this.vy += this.ay;
+            } else if (gbox.keyIsPressed('down')) {
+              this.vx *= 1 - this.afterburn;
+              this.vy *= 1 - this.afterburn;
+            }
+            if (gbox.keyIsPressed('right')) {
+              this.ang += TURN_SPEED;
+              this.ax = Math.cos(this.ang) * this.thrust;
+              this.ay = Math.sin(this.ang) * this.thrust;
+            } else if (gbox.keyIsPressed('left')) {
+              this.ang -= TURN_SPEED;
+              this.ax = Math.cos(this.ang) * this.thrust;
+              this.ay = Math.sin(this.ang) * this.thrust;
+            }
+            if (this.ang < 0) this.ang = Math.PI * 2 - this.ang;
+            this.x += this.vx;
+            this.y += this.vy;
+            this.frame = Math.round(((this.ang + (Math.PI / 2)) / (Math.PI * 2)) * 16) % 16;
+            if (going) this.frame += 16;
+            if (gbox.keyIsHit('a') && (this.wcharge >= this.wcost)) {
+              this.wcharge -= this.wcost;
+              addShot(this.x + this.w / 2, this.y + this.h / 2, this.x + this.w / 2 + (this.ax / this.thrust) * 20000, this.y + this.h / 2 + (this.ay / this.thrust) * 20000, this.wpower, this.wspeed, 4, 'friend_shots', this.wspan, this.vx, this.vy);
+            }
+            if (this.wcharge < this.wcharge_cap) this.wcharge += 1;
+            return groupCollides(this, 'foe_shots', function(shot) {
+              _this.shields -= shot.power;
+              return shot.die();
+            });
+          },
+          initialize: function() {
+            return this.init();
+          },
+          blit: function() {
+            return gbox.blitTile(gbox.getBufferContext(), {
+              tileset: this.tileset,
+              tile: this.frame,
+              dx: Math.round(this.x - cam.x),
+              dy: Math.round(this.y - cam.y)
+            });
+          }
+        });
+      };
+      addBaddie = function() {
+        return gbox.addObject({
+          group: 'baddies',
+          init: function() {
+            this.num = 0;
+            this.frame = 0;
+            this.image = gbox.getImage('bad' + this.num);
+            this.w = 8;
+            this.h = 8;
+            this.x = Math.random() * gbox.getScreenW();
+            this.y = Math.random() * gbox.getScreenH();
+            this.vx = 0;
+            this.vy = 0;
+            this.wcharge_cap = 50;
+            this.wcharge = this.wcharge_cap;
+            this.wspeed = 1;
+            this.wpower = 1;
+            this.wcost = 50;
+            this.wspan = 80;
+            this.tx = this.x;
+            this.ty = this.y;
+            this.tsx = 0;
+            this.tsy = 0;
+            this.attack_dist = 90;
+            this.orbit_radius = 60;
+            this.hostile = true;
+            this.ang = 0;
+            this.thrust = 0.006;
+            this.afterburn = 0.005;
+            return this.shields = 3;
+          },
+          first: function() {
+            var ax, ay, d, dx, dy, len, xoff, yoff,
+              _this = this;
+            if (paused) return;
+            if (this.hostile) {
+              dx = player.x - this.x;
+              dy = player.y - this.y;
+              d = Math.sqrt(dx * dx + dy * dy);
+              if (this.wcharge >= this.wcost && d < this.attack_dist) {
+                this.tsx = player.x + player.vx + this.vx;
+                this.tsy = player.y + player.vy + this.vy;
+                this.wcharge -= this.wcost;
+                addShot(this.x + this.w / 2, this.y + this.h / 2, this.tsx, this.tsy, this.wpower, this.wspeed, 1, 'foe_shots', this.wspan, this.vx, this.vy);
+              }
+              this.ang += 0.005;
+              xoff = Math.cos(this.ang);
+              yoff = Math.sin(this.ang);
+              this.tx = player.x + xoff * this.orbit_radius;
+              this.ty = player.y + xoff * this.orbit_radius;
+            } else {
+              if (Math.random() < 0.01) {
+                this.tx = gbox.getScreenW() * Math.random();
+                this.ty = gbox.getScreenH() * Math.random();
+              }
+            }
+            ax = this.tx - this.x;
+            ay = this.ty - this.y;
+            len = Math.sqrt(ax * ax + ay * ay);
+            ax /= len;
+            ay /= len;
+            ax *= this.thrust;
+            ay *= this.thrust;
+            this.vx += ax;
+            this.vy += ay;
+            this.x += this.vx;
+            this.y += this.vy;
             this.vx *= 1 - this.afterburn;
             this.vy *= 1 - this.afterburn;
-          }
-          if (gbox.keyIsPressed('right')) {
-            this.ang += TURN_SPEED;
-            this.ax = Math.cos(this.ang) * this.thrust;
-            this.ay = Math.sin(this.ang) * this.thrust;
-          } else if (gbox.keyIsPressed('left')) {
-            this.ang -= TURN_SPEED;
-            this.ax = Math.cos(this.ang) * this.thrust;
-            this.ay = Math.sin(this.ang) * this.thrust;
-          }
-          if (this.ang < 0) this.ang = Math.PI * 2 - this.ang;
-          this.x += this.vx;
-          this.y += this.vy;
-          this.frame = Math.round(((this.ang + (Math.PI / 2)) / (Math.PI * 2)) * 16) % 16;
-          if (going) this.frame += 16;
-          if (gbox.keyIsHit('a') && (this.wcharge >= this.wcost)) {
-            this.wcharge -= this.wcost;
-            addShot(this.x + this.w / 2, this.y + this.h / 2, this.x + this.w / 2 + (this.ax / this.thrust) * 20000, this.y + this.h / 2 + (this.ay / this.thrust) * 20000, this.wspeed, 4, 'friend_shots', this.wspan, this.vx, this.vy);
-          }
-          if (this.wcharge < this.wcharge_cap) return this.wcharge += 1;
-        },
-        initialize: function() {
-          return this.init();
-        },
-        blit: function() {
-          return gbox.blitTile(gbox.getBufferContext(), {
-            tileset: this.tileset,
-            tile: this.frame,
-            dx: Math.round(this.x - cam.x),
-            dy: Math.round(this.y - cam.y)
-          });
-          /* DEBUG
-          gbox.blitTile gbox.getBufferContext(),
-            tileset: 'shots_tiles'
-            tile: 3
-            dx: (@x+@w/2)+@ax*20000
-            dy: (@y+@h/2)+@ay*20000
-          gbox.blitTile gbox.getBufferContext(),
-            tileset: 'shots_tiles'
-            tile: 7
-            dx: @x+@w/2
-            dy: @y+@h/2
-          */
-        }
-      });
-    };
-    addBaddie = function() {
-      return gbox.addObject({
-        group: 'baddies',
-        init: function() {
-          this.num = 0;
-          this.frame = 0;
-          this.image = gbox.getImage('bad' + this.num);
-          this.w = 8;
-          this.h = 8;
-          this.x = Math.random() * gbox.getScreenW();
-          this.y = Math.random() * gbox.getScreenH();
-          this.vx = 0;
-          this.vy = 0;
-          this.wcharge_cap = 50;
-          this.wcharge = this.wcharge_cap;
-          this.wspeed = 1;
-          this.wcost = 50;
-          this.wspan = 80;
-          this.tx = this.x;
-          this.ty = this.y;
-          this.tsx = 0;
-          this.tsy = 0;
-          this.attack_dist = 90;
-          this.orbit_radius = 60;
-          this.hostile = true;
-          this.ang = 0;
-          this.thrust = 0.006;
-          return this.afterburn = 0.005;
-        },
-        first: function() {
-          var ax, ay, d, dx, dy, len, xoff, yoff;
-          if (paused) return;
-          if (this.hostile) {
-            dx = player.x - this.x;
-            dy = player.y - this.y;
-            d = Math.sqrt(dx * dx + dy * dy);
-            if (this.wcharge >= this.wcost && d < this.attack_dist) {
-              this.tsx = player.x + player.vx + this.vx;
-              this.tsy = player.y + player.vy + this.vy;
-              this.wcharge -= this.wcost;
-              addShot(this.x + this.w / 2, this.y + this.h / 2, this.tsx, this.tsy, this.wspeed, 1, 'foe_shots', this.wspan, this.vx, this.vy);
-            }
-            this.ang += 0.005;
-            xoff = Math.cos(this.ang);
-            yoff = Math.sin(this.ang);
-            this.tx = player.x + xoff * this.orbit_radius;
-            this.ty = player.y + xoff * this.orbit_radius;
-          } else {
-            if (Math.random() < 0.01) {
-              this.tx = gbox.getScreenW() * Math.random();
-              this.ty = gbox.getScreenH() * Math.random();
-            }
-          }
-          ax = this.tx - this.x;
-          ay = this.ty - this.y;
-          len = Math.sqrt(ax * ax + ay * ay);
-          ax /= len;
-          ay /= len;
-          ax *= this.thrust;
-          ay *= this.thrust;
-          this.vx += ax;
-          this.vy += ay;
-          this.x += this.vx;
-          this.y += this.vy;
-          this.vx *= 1 - this.afterburn;
-          this.vy *= 1 - this.afterburn;
-          if (this.wcharge < this.wcharge_cap) return this.wcharge += 1;
-        },
-        initialize: function() {
-          return this.init();
-        },
-        blit: function() {
-          return gbox.blitAll(gbox.getBufferContext(), this.image, {
-            dx: Math.round(this.x - cam.x),
-            dy: Math.round(this.y - cam.y)
-          });
-        }
-      });
-    };
-    addDrone = function() {
-      return gbox.addObject({
-        group: 'drones',
-        init: function() {
-          this.deployed = false;
-          this.frame = 0;
-          this.tileset = 'drones_tiles';
-          this.w = 5;
-          this.h = 5;
-          this.x = player.x + player.h / 2 - this.w / 2;
-          this.y = player.y + player.h / 2 - this.h / 2;
-          this.vx = 0;
-          this.vy = 0;
-          this.ang = Math.random() * Math.PI * 2;
-          this.xoff = Math.cos(this.ang);
-          this.yoff = Math.sin(this.ang);
-          return this.dist = 20;
-        },
-        first: function() {
-          var p, tx, ty;
-          if (paused) return;
-          this.ang += 0.02;
-          this.xoff = Math.cos(this.ang);
-          this.yoff = Math.sin(this.ang);
-          p = player;
-          tx = p.x + 4 + this.dist * this.xoff || 0;
-          ty = p.y + 4 + this.dist * this.yoff || 0;
-          this.x += (tx - this.x) * 0.025;
-          return this.y += (ty - this.y) * 0.025;
-        },
-        initialize: function() {
-          return this.init();
-        },
-        blit: function() {
-          return gbox.blitTile(gbox.getBufferContext(), {
-            tileset: this.tileset,
-            tile: this.frame,
-            dx: Math.round(this.x - cam.x),
-            dy: Math.round(this.y - cam.y)
-          });
-        }
-      });
-    };
-    addShot = function(x, y, tx, ty, speed, frame, group, lifespan, vx, vy) {
-      return gbox.addObject({
-        group: group,
-        init: function() {
-          var len;
-          this.frame = frame;
-          this.tileset = 'shots_tiles';
-          this.w = 3;
-          this.h = 3;
-          this.x = x - this.w / 2;
-          this.y = y - this.h / 2;
-          this.vx = tx - this.x;
-          this.vy = ty - this.y;
-          len = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-          this.vx /= len;
-          this.vy /= len;
-          this.vx *= speed;
-          this.vy *= speed;
-          if (vx && vy) {
-            this.vx += vx;
-            this.vy += vy;
-          }
-          this.lifespan = lifespan || 99999;
-          return this.tick = 0;
-        },
-        die: function() {
-          return gbox.trashObject(this);
-        },
-        first: function() {
-          if (paused) return;
-          this.x += this.vx;
-          this.y += this.vy;
-          ++this.tick;
-          if (this.tick > this.lifespan) return this.die();
-        },
-        initialize: function() {
-          return this.init();
-        },
-        blit: function() {
-          return gbox.blitTile(gbox.getBufferContext(), {
-            tileset: this.tileset,
-            tile: this.frame,
-            dx: Math.round(this.x - cam.x),
-            dy: Math.round(this.y - cam.y)
-          });
-        }
-      });
-    };
-    addPlanet = function(radius) {
-      return gbox.addObject({
-        group: 'planet',
-        radius: radius || 50,
-        init: function() {
-          this.tileset = 'drones_tiles';
-          this.w = 100;
-          this.h = 100;
-          this.x = gbox.getScreenW() / 2 - this.w / 2;
-          this.y = gbox.getScreenH() / 2 - this.h / 2;
-          this.ang = 0;
-          this.xoff = 0;
-          this.yoff = 0;
-          this.dist = 3;
-          this.dirx = frand(-this.radius, this.radius);
-          return this.diry = frand(-this.radius * .1, this.radius * .1);
-        },
-        first: function() {
-          if (paused) return;
-          this.ang += 0.02;
-          return this.yoff = 3 * Math.sin(this.ang);
-        },
-        initialize: function() {
-          return this.init();
-        },
-        blit: function() {
-          var ctx, grd, x, y;
-          ctx = gbox.getBufferContext();
-          if (!ctx) return;
-          x = Math.round(this.x + this.xoff - cam.x);
-          y = Math.round(this.y + this.yoff - cam.y);
-          ctx.beginPath();
-          grd = ctx.createRadialGradient(x + this.dirx, y + this.diry, 0, x + this.dirx, y + this.diry, this.radius * 1.4);
-          grd.addColorStop(0, '#224455');
-          grd.addColorStop(1, '#000510');
-          ctx.fillStyle = grd;
-          ctx.arc(x, y, this.radius, 0, 2 * Math.PI, false);
-          ctx.fill();
-          return ctx.closePath();
-          /*
-                    gbox.blitAll gbox.getBufferContext(), gbox.getImage('planet0'),
-                      dx: Math.round(@x + @xoff - cam.x)
-                      dy: Math.round(@y + @yoff - cam.y)
-          */
-        }
-      });
-    };
-    main = function() {
-      gbox.setGroups(['background', 'game', 'planet', 'player', 'baddies', 'drones', 'friend_shots', 'foe_shots', 'pause']);
-      maingame = gamecycle.createMaingame('game', 'game');
-      maingame.gameMenu = function() {
-        return true;
-      };
-      maingame.gameIntroAnimation = function() {
-        return true;
-      };
-      maingame.gameTitleIntroAnimation = function() {
-        gbox.blitFade(gbox.getBufferContext(), {
-          alpha: 1
-        });
-        gbox.blitAll(gbox.getBufferContext(), gbox.getImage('logo'), {
-          dx: 1,
-          dy: 1
-        });
-        return gbox.keyIsHit('a');
-      };
-      maingame.pressStartIntroAnimation = function(reset) {
-        return gbox.keyIsHit('a');
-      };
-      maingame.initializeGame = function() {
-        player = addPlayer();
-        cam = addCamera();
-        addDrone();
-        addDrone();
-        addPlanet();
-        addBaddie();
-        addPauseScreen();
-        return gbox.addObject({
-          id: 'bg_id',
-          group: 'background',
-          color: 'rgb(0,0,0)',
+            if (this.wcharge < this.wcharge_cap) this.wcharge += 1;
+            return groupCollides(this, 'friend_shots', function(shot) {
+              _this.shields -= shot.power;
+              if (_this.shields < 0) _this.die();
+              return shot.die();
+            });
+          },
+          initialize: function() {
+            return this.init();
+          },
+          die: function() {
+            return gbox.trashObject(this);
+          },
           blit: function() {
-            gbox.blitFade(gbox.getBufferContext(), {
-              color: '#000510',
-              alpha: 1
-            });
-            gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
-              dx: -cam.x % W,
-              dy: -cam.y % H
-            });
-            gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
-              dx: -cam.x % W - W,
-              dy: -cam.y % H - H
-            });
-            gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
-              dx: -cam.x % W,
-              dy: -cam.y % H - H
-            });
-            gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
-              dx: -cam.x % W + W,
-              dy: -cam.y % H - H
-            });
-            gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
-              dx: -cam.x % W + W,
-              dy: -cam.y % H
-            });
-            gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
-              dx: -cam.x % W + W,
-              dy: -cam.y % H + H
-            });
-            gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
-              dx: -cam.x % W,
-              dy: -cam.y % H + H
-            });
-            gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
-              dx: -cam.x % W - W,
-              dy: -cam.y % H + H
-            });
-            return gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
-              dx: -cam.x % W - W,
-              dy: -cam.y % H
+            return gbox.blitAll(gbox.getBufferContext(), this.image, {
+              dx: Math.round(this.x - cam.x),
+              dy: Math.round(this.y - cam.y)
             });
           }
         });
       };
-      return gbox.go();
+      addDrone = function() {
+        return gbox.addObject({
+          group: 'drones',
+          init: function() {
+            this.deployed = false;
+            this.frame = 0;
+            this.tileset = 'drones_tiles';
+            this.w = 5;
+            this.h = 5;
+            this.x = player.x + player.h / 2 - this.w / 2;
+            this.y = player.y + player.h / 2 - this.h / 2;
+            this.vx = 0;
+            this.vy = 0;
+            this.ang = Math.random() * Math.PI * 2;
+            this.xoff = Math.cos(this.ang);
+            this.yoff = Math.sin(this.ang);
+            return this.dist = 20;
+          },
+          first: function() {
+            var p, tx, ty;
+            if (paused) return;
+            this.ang += 0.02;
+            this.xoff = Math.cos(this.ang);
+            this.yoff = Math.sin(this.ang);
+            p = player;
+            tx = p.x + 4 + this.dist * this.xoff || 0;
+            ty = p.y + 4 + this.dist * this.yoff || 0;
+            this.x += (tx - this.x) * 0.025;
+            return this.y += (ty - this.y) * 0.025;
+          },
+          initialize: function() {
+            return this.init();
+          },
+          blit: function() {
+            return gbox.blitTile(gbox.getBufferContext(), {
+              tileset: this.tileset,
+              tile: this.frame,
+              dx: Math.round(this.x - cam.x),
+              dy: Math.round(this.y - cam.y)
+            });
+          }
+        });
+      };
+      addShot = function(x, y, tx, ty, power, speed, frame, group, lifespan, vx, vy) {
+        return gbox.addObject({
+          group: group,
+          w: 0.1,
+          h: 0.1,
+          init: function() {
+            var len;
+            this.frame = frame;
+            this.tileset = 'shots_tiles';
+            this.w = 3;
+            this.h = 3;
+            this.x = x - this.w / 2;
+            this.y = y - this.h / 2;
+            this.vx = tx - this.x;
+            this.vy = ty - this.y;
+            len = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+            this.vx /= len;
+            this.vy /= len;
+            this.vx *= speed;
+            this.vy *= speed;
+            if (vx && vy) {
+              this.vx += vx;
+              this.vy += vy;
+            }
+            this.lifespan = lifespan || 99999;
+            this.tick = 0;
+            return this.power = power;
+          },
+          die: function() {
+            return gbox.trashObject(this);
+          },
+          first: function() {
+            if (paused) return;
+            this.x += this.vx;
+            this.y += this.vy;
+            ++this.tick;
+            if (this.tick > this.lifespan) return this.die();
+          },
+          initialize: function() {
+            return this.init();
+          },
+          blit: function() {
+            return gbox.blitTile(gbox.getBufferContext(), {
+              tileset: this.tileset,
+              tile: this.frame,
+              dx: Math.round(this.x - cam.x),
+              dy: Math.round(this.y - cam.y)
+            });
+          }
+        });
+      };
+      GRID_W = 40;
+      GRID_H = 40;
+      OFF_RADIUS = 4;
+      MIN_STAR_RAD = 900;
+      MAX_STAR_RAD = 40000;
+      addStarmap = function(x, y, density) {
+        Math.seedrandom(BASE_SEED + x + ',' + y);
+        return gbox.addObject({
+          group: 'starmap',
+          closest: function(x, y) {
+            var d2, dx, dy, minD2, ret, star, _i, _len, _ref;
+            minD2 = 999999;
+            ret = void 0;
+            _ref = this.stars;
+            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+              star = _ref[_i];
+              dx = x - star.x;
+              dy = y - star.y;
+              d2 = dx * dx + dy * dy;
+              if (d2 < minD2) {
+                minD2 = d2;
+                ret = star;
+              }
+            }
+            return ret;
+          },
+          init: function() {
+            var c, color, i, j, off_ang, off_mag, xoff, yoff;
+            gbox.stopGroup('starmap');
+            this.stars = [];
+            c = document.getElementById('starmap').getContext('2d');
+            this.starmap = c.createImageData(W, H);
+            i = 0;
+            while (i < GRID_W) {
+              this.stars[i] = [];
+              j = 0;
+              while (j < GRID_H) {
+                off_ang = Math.PI * 2 * Math.random();
+                off_mag = Math.random() * OFF_RADIUS;
+                if (Math.random() < density) {
+                  color = choose(starcolors);
+                  xoff = Math.cos(off_ang) * off_mag;
+                  yoff = Math.sin(off_ang) * off_mag;
+                  x = i * 2 * OFF_RADIUS + xoff;
+                  y = j * 2 * OFF_RADIUS + yoff;
+                  x = clamp(x, 0, W);
+                  y = clamp(y, 0, H);
+                  this.stars[i].push({
+                    radius: frand(MIN_STAR_RAD, MAX_STAR_RAD),
+                    xoff: xoff,
+                    yoff: yoff,
+                    x: x,
+                    y: y,
+                    color: color
+                  });
+                  setPixel(this.starmap, Math.round(x), Math.round(y), color[0], color[1], color[2], color[3]);
+                }
+                ++j;
+              }
+              ++i;
+            }
+            return c.putImageData(this.starmap, 0, 0);
+          },
+          first: function() {
+            if (paused) {}
+          },
+          initialize: function() {
+            return this.init();
+          },
+          blit: function() {
+            var c;
+            c = gbox.getBufferContext();
+            if (c) return c.putImageData(this.starmap, 0, 0);
+          }
+        });
+      };
+      addPlanetMap = function(star) {
+        return gbox.addObject({
+          group: 'starmap',
+          init: function() {},
+          first: function() {},
+          initialize: function() {
+            return this.init();
+          },
+          blit: function() {
+            var c;
+            c = gbox.getBufferContext();
+            if (c) return c.putImageData(this.map, 0, 0);
+          }
+        });
+      };
+      addPlanet = function(radius) {
+        return gbox.addObject({
+          group: 'planet',
+          radius: radius || 50,
+          init: function() {
+            this.tileset = 'drones_tiles';
+            this.w = 100;
+            this.h = 100;
+            this.x = gbox.getScreenW() / 2 - this.w / 2;
+            this.y = gbox.getScreenH() / 2 - this.h / 2;
+            this.ang = 0;
+            this.xoff = 0;
+            this.yoff = 0;
+            this.dist = 3;
+            this.dirx = frand(-this.radius, this.radius);
+            return this.diry = frand(-this.radius * .1, this.radius * .1);
+          },
+          first: function() {
+            if (paused) return;
+            this.ang += 0.02;
+            return this.yoff = 3 * Math.sin(this.ang);
+          },
+          initialize: function() {
+            return this.init();
+          },
+          blit: function() {
+            var ctx, grd, x, y;
+            ctx = gbox.getBufferContext();
+            if (!ctx) return;
+            x = Math.round(this.x + this.xoff - cam.x);
+            y = Math.round(this.y + this.yoff - cam.y);
+            ctx.beginPath();
+            grd = ctx.createRadialGradient(x + this.dirx, y + this.diry, 0, x + this.dirx, y + this.diry, this.radius * 1.4);
+            grd.addColorStop(0, '#224455');
+            grd.addColorStop(1, '#000510');
+            ctx.fillStyle = grd;
+            ctx.arc(x, y, this.radius, 0, 2 * Math.PI, false);
+            ctx.fill();
+            return ctx.closePath();
+            /*
+                        gbox.blitAll gbox.getBufferContext(), gbox.getImage('planet0'),
+                          dx: Math.round(@x + @xoff - cam.x)
+                          dy: Math.round(@y + @yoff - cam.y)
+            */
+          }
+        });
+      };
+      main = function() {
+        gbox.setGroups(['background', 'game', 'starmap', 'planet', 'player', 'friend_shots', 'baddies', 'drones', 'foe_shots', 'pause']);
+        maingame = gamecycle.createMaingame('game', 'game');
+        maingame.gameMenu = function() {
+          return true;
+        };
+        maingame.gameIntroAnimation = function() {
+          return true;
+        };
+        maingame.gameTitleIntroAnimation = function() {
+          gbox.blitFade(gbox.getBufferContext(), {
+            alpha: 1
+          });
+          gbox.blitAll(gbox.getBufferContext(), gbox.getImage('logo'), {
+            dx: 1,
+            dy: 1
+          });
+          return gbox.keyIsHit('a');
+        };
+        maingame.pressStartIntroAnimation = function(reset) {
+          return gbox.keyIsHit('a');
+        };
+        maingame.initializeGame = function() {
+          player = addPlayer();
+          cam = addCamera();
+          addDrone();
+          addDrone();
+          addPlanet();
+          addBaddie();
+          addPauseScreen();
+          addStarmap(5, 34, 0.2);
+          return gbox.addObject({
+            id: 'bg_id',
+            group: 'background',
+            color: 'rgb(0,0,0)',
+            blit: function() {
+              gbox.blitFade(gbox.getBufferContext(), {
+                color: '#000510',
+                alpha: 1
+              });
+              gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
+                dx: -cam.x % W,
+                dy: -cam.y % H
+              });
+              gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
+                dx: -cam.x % W - W,
+                dy: -cam.y % H - H
+              });
+              gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
+                dx: -cam.x % W,
+                dy: -cam.y % H - H
+              });
+              gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
+                dx: -cam.x % W + W,
+                dy: -cam.y % H - H
+              });
+              gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
+                dx: -cam.x % W + W,
+                dy: -cam.y % H
+              });
+              gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
+                dx: -cam.x % W + W,
+                dy: -cam.y % H + H
+              });
+              gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
+                dx: -cam.x % W,
+                dy: -cam.y % H + H
+              });
+              gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
+                dx: -cam.x % W - W,
+                dy: -cam.y % H + H
+              });
+              return gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
+                dx: -cam.x % W - W,
+                dy: -cam.y % H
+              });
+            }
+          });
+        };
+        gbox.go();
+        return gbox.stopGroup('starmap');
+      };
+      return window.addEventListener('load', loadResources, false);
     };
-    return window.addEventListener('load', loadResources, false);
+    return starcolors_el.src = 'star_color_distr.png';
   }).call(this);</script></html>
