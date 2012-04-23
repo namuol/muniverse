@@ -168,8 +168,8 @@ html ->
       gbox.addTiles
         id: 'peoples_tiles'
         image: 'peoples'
-        tileh: 8
-        tilew: 8
+        tileh: 16
+        tilew: 16
         tilerow: 16
         gapx: 0
         gapy: 0
@@ -216,6 +216,36 @@ html ->
         gapy: 0
 
       gbox.loadAll main
+
+    stationMode = (station) ->
+
+      stopGroups = [
+        'background'
+        'planet'
+        'player'
+        'baddies'
+        'drones'
+        'friend_shots'
+        'foe_shots'
+        'resources'
+        'particles'
+        'starmap'
+        'stations'
+      ]
+      for g in stopGroups
+        gbox.stopGroup g
+
+      stationscreen = new StationScreen station
+      gbox.addObject stationscreen
+
+      groups = [
+        'stationscreen'
+      ]
+      for g in groups
+        gbox.stopGroup g
+        gbox.toggleGroup g
+
+      player.skip = true
 
     planetmapMode = ->
       stopGroups = [
@@ -270,7 +300,11 @@ html ->
       player.skip = true
 
    
-    flightMode = ->
+    flightMode = (reset) ->
+      if reset
+        gbox.clearGroup 'friend_shots'
+        gbox.clearGroup 'foe_shots'
+        gbox.clearGroup 'particles'
       gbox.clearGroup 'planet'
       gbox.clearGroup 'resources'
       gbox.clearGroup 'stations'
@@ -307,145 +341,86 @@ html ->
         gbox.toggleGroup g
       player.skip = true
 
-    
-    
-    paused = false
-    menuVisible = false
     cam = {
       x:0
       y:0
     }
     
-    togglePause = ->
-      paused = !paused
-
     class Menu
       constructor: ->
         @selected = 0
         @items = []
 
       up: ->
+        return if @items.length is 0
         @selected = (@selected - 1) % @items.length
         if @selected < 0
           @selected = @items.length - 1
-        while !@items[@selected].enabled
+        while @items[@selected].disabled
           @selected = (@selected - 1) % @items.length
       down: ->
+        return if @items.length is 0
         @selected = (@selected + 1) % @items.length
-        while !@items[@selected].enabled
+        while @items[@selected].disabled
           @selected = (@selected + 1) % @items.length
-      select: ->
-        console.log @items[@selected].name
-        @items[@selected].select()
+      a: ->
+        if @items[@selected]
+          @items[@selected].a()
+      b: ->
+        if @items[@selected]
+          @items[@selected].b()
+      c: ->
+        if @items[@selected]
+          @items[@selected].c()
+      update: ->
+        if gbox.keyIsHit 'a'
+          @a()
+        if gbox.keyIsHit 'b'
+          @b()
+        if gbox.keyIsHit 'c'
+          @c()
 
-    starmapMenu = new Menu
-    starmapMenu.items = [
-        name: 'RETURN TO BRIDGE'
-        enabled: true
-        select: ->
-          togglePause()
-          window.currentMenu = rootMenu
-          menuVisible = false
-          groups = [
-            'planet'
-            'player'
-            'baddies'
-            'drones'
-            'friend_shots'
-            'foe_shots'
-          ]
-          for g in groups
-            gbox.stopGroup g
-            gbox.toggleGroup g
-          gbox.stopGroup 'starmap'
+        if gbox.keyIsHit 'up'
+          @up()
+        else if gbox.keyIsHit 'down'
+          @down()
 
-    ]
-
-    rootMenu = new Menu
-    rootMenu.items = [
-        name: 'DROP PROBE'
-        enabled: true
-        select: ->
-          menuVisible = false
-          togglePause()
-      ,
-        name: 'STARMAP'
-        enabled: true
-        select: ->
-          menuVisible = false
-          groups = [
-            'planet'
-            'player'
-            'baddies'
-            'drones'
-            'friend_shots'
-            'foe_shots'
-          ]
-          for g in groups
-            gbox.stopGroup g
-          gbox.stopGroup 'starmap'
-          gbox.toggleGroup 'starmap'
-          window.currentMenu = starmapMenu
-          togglePause()
-    ]
-
-    window.currentMenu = rootMenu
-
-    addPauseScreen = ->
-      gbox.addObject
-        x:0
-        y:0
-        vx:0
-        vy:0
-        group: 'pause'
-        first: ->
-          if gbox.keyIsHit 'c'
-            menuVisible = !menuVisible
-            togglePause()
-
-          return if not menuVisible
-
-          if gbox.keyIsHit 'a'
-            currentMenu.select()
-            return
-
-          if gbox.keyIsHit 'up'
-            currentMenu.up()
-          else if gbox.keyIsHit 'down'
-            currentMenu.down()
-
-        blit: ->
-          return if not menuVisible
-
-          gbox.blitFade gbox.getBufferContext(),
-            alpha:0.5
-
-          height = 9 * currentMenu.items.length
-          top = H/2 - height/2
-          top -= 9
-          num = 0
-          for item in currentMenu.items
-            top += 9
-            
-            if item.enabled
-              if currentMenu.selected == num
-                alpha = 1
-              else
-                alpha = 0.5
+      render: (x,yoff) ->
+        height = 17 * @items.length
+        top = H/2 - height/2 + yoff
+        top -= 17
+        num = 0
+        for item in @items
+          top += 17
+          
+          if !item.disabled
+            if @selected == num
+              alpha = 1
             else
-              alpha = 0.25
+              alpha = 0.5
+          else
+            alpha = 0.25
+          ++num
+          item.render x, top, alpha
 
-            ++num
-            gbox.blitText gbox.getBufferContext(),
-              font: 'small'
-              text: item.name
-              dx:0
-              dy:top
-              dw:W
-              dh:16
-              halign: gbox.ALIGN_LEFT
-              valign: gbox.ALIGN_TOP
-              alpha:alpha
+    class MenuItem
+      constructor: (@text) ->
+      a: -> # TODO SOUNDS HERE
+      b: ->
+      c: ->
+      render: (x, top, alpha) ->
+        gbox.blitText gbox.getBufferContext(),
+          font: 'small'
+          text: @text()
+          dx:x
+          dy:top
+          dw:W
+          dh:16
+          halign: gbox.ALIGN_LEFT
+          valign: gbox.ALIGN_TOP
+          alpha:alpha
+
+
 
     addCamera = ->
       gbox.addObject
@@ -462,31 +437,11 @@ html ->
           @vy = 0
 
         first: ->
-          return if paused
           @vx = (player.x+player.vx*60 - (@x+160)) * 0.05
           @vy = (player.y+player.vy*60 - (@y+160)) * 0.05
           @x += @vx
           @y += @vy
 
-    class PassengerIcon
-      constructor: ->
-        @parts = []
-        @parts.push rand 0, 16
-        @parts.push rand 0, 16
-        @parts.push rand 0, 16
-
-      render: (x,y) ->
-        n=0
-        for partNum in @parts
-          gbox.blitTile gbox.getBufferContext(),
-            tileset: 'peoples_tiles'
-            tile: n*16 + partNum
-            dx: Math.round(x)
-            dy: Math.round(y)
-          ++n
-
-    class Passenger
-      constructor: (icon) ->
     
     BASE_THRUST = 0.025
     BASE_SHIELDS = 3
@@ -499,6 +454,7 @@ html ->
     player = undefined
     class Player
       constructor: (name) ->
+        @available_cabins = 3
         @wcharge_cap = BASE_WCHARGE_CAP
         @wcharge_rate = BASE_WCHARGE_RATE
         @wcharge = @wcharge_cap
@@ -538,7 +494,6 @@ html ->
         @particle_tick=0
 
       first: ->
-        return if paused
         if @skip
           @skip = false
           return
@@ -645,7 +600,6 @@ html ->
           @cargo = {}
 
         first: ->
-          return if paused
           if @hostile
             dx = player.x - @x
             dy = player.y - @y
@@ -745,7 +699,6 @@ html ->
           @dist = 20
 
         first: ->
-          return if paused
           @ang += 0.02 #Math.random() * Math.PI*2
           @xoff = Math.cos @ang
           @yoff = Math.sin @ang
@@ -797,7 +750,6 @@ html ->
           gbox.trashObject @
 
         first: ->
-          return if paused
           @x += @vx
           @y += @vy
           ++@tick
@@ -826,7 +778,7 @@ html ->
         @x = x
         @y = y
         @color = color
-        @pcount = rand 0,MAX_STAR_PLANETS
+        @pcount = rand 1,MAX_STAR_PLANETS
         @itg = itg
         @pirate = piracy
 
@@ -927,7 +879,6 @@ html ->
         return @_factor(x,y)
 
       first: ->
-        return if paused
         if @skip
           @skip = false
           return
@@ -947,7 +898,7 @@ html ->
           gbox.clearGroup 'planetmap'
           @closest_star.generate_planets()
           window.planetmap = new Planetmap @closest_star
-          planetmap.skip = true
+          window.planetmap.skip = true
           gbox.addObject planetmap
           planetmapMode()
           return
@@ -1030,6 +981,7 @@ html ->
         min_orbit: 0.5
         max_orbit: 1.0
         station_prob: 0.5
+        max_mission_count: 5
         ring_prob: 0.25
 
       rocky:
@@ -1041,12 +993,14 @@ html ->
         min_moons: 0
         max_moons: 3
         station_prob: 0.75
+        max_mission_count: 10
         ring_prob: 0.1
 
       moon:
         min_radius: 10
         max_radius: 20
         station_prob: 0.25
+        max_mission_count: 7
         ring_prob: 0
 
     current_planet = undefined
@@ -1100,14 +1054,16 @@ html ->
           ang = Math.random() * 2*Math.PI
           x = @_x + r*Math.cos ang
           y = @_y + r*Math.sin ang
-          @itg_station = new Station 'itg', x,y
+          @itg_station = new Station @, 'itg', x,y
+          @itg_station.new_missions()
 
         if Math.random() < pirate_station_prob
           r =MIN_STATION_DIST + @radius * 4
           ang = Math.random() * 2*Math.PI
           x = @_x + r*Math.cos ang
           y = @_y + r*Math.sin ang
-          @pirate_station = new Station 'pirate', x,y
+          @pirate_station = new Station @, 'pirate', x,y
+          @pirate_station.new_missions()
 
         @moons = []
         return if moon
@@ -1133,15 +1089,12 @@ html ->
         @yoff = 0
         @dist = 3
 
-        #console.log 'init'
         # Sunlight direction:
         @dirx = frand(-@radius,@radius)
         @diry = frand(-@radius*.1,@radius*.1)
 
-
       first: ->
-        return if paused
-        @ang += 0.02 #Math.random() * Math.PI*2
+        @ang += 0.02
         @xoff = 0
         @yoff = 3*Math.sin @ang
         @x = Math.round @_x + @xoff
@@ -1200,7 +1153,6 @@ html ->
 
 
       first: ->
-        return if paused
         if @skip
           @skip = false
           return
@@ -1220,7 +1172,7 @@ html ->
           player.vy = 0
           player.x = 0
           player.y = 0
-          flightMode()
+          flightMode(true)
 
         return if @positions.length is 0
         if gbox.keyIsHit 'up'
@@ -1306,14 +1258,104 @@ html ->
       'itg':
         num:0
         frame_length:60/2
+        fugitive_rate: 0.1
       'pirate':
         num:1
         frame_length:60/2
+        fugitive_rate: 0.4
     }
+
+    class Person
+      constructor: (role, fugitive) ->
+        @parts = []
+        @parts.push rand 0, 16
+        @parts.push rand 0, 16
+        if rand(0,1)
+          @parts.push @parts[1]
+        @role = role
+        @fugitive = fugitive
+
+      render: (x,y, alpha) ->
+        n=0
+        for partNum in @parts
+          gbox.blitTile gbox.getBufferContext(),
+            tileset: 'peoples_tiles'
+            tile: n*16 + partNum
+            dx: Math.round(x)
+            dy: Math.round(y)
+          ++n
+
+    class Mission extends MenuItem
+      constructor: (@person) ->
+        @accepted = false
+      a: ->
+        dq = @doesnt_qualify()
+        if dq
+          # TODO message protocol..
+          console.log dq
+          return false
+        @accepted = !@accepted
+        return true
+      doesnt_qualify: ->
+        false
+      text: ->
+        if @accepted
+          '[X]'
+        else
+          '[ ]'
+      render: (x, top, alpha) ->
+        @person.render(x,top,alpha)
+        super(x+24, top+4, alpha)
+
+    class CabinDweller extends Mission
+      constructor: (@person, @star) ->
+      a: ->
+        if super()
+          if @accepted
+            console.log 'Accepted Taxi Mission!'
+            --player.available_cabins
+          else
+            console.log 'Abandoned Taxi Mission!'
+            ++player.available_cabins
+      doesnt_qualify: ->
+        return false if @accepted
+
+        if player.available_cabins <= 0
+          'No available cabins.'
+        else
+          false
+
+    class TaxiMission extends CabinDweller
+      text: ->
+        super() + 'Taxi'
+    class CrewMission extends CabinDweller
+      text: ->
+        super() + 'Crew'
 
     DOCKING_DURATION = 80
     class Station
-      constructor: (name, x,y) ->
+      new_missions: ->
+        max_count = PLANET_CLASSES[@planet.ptype].max_mission_count
+        activity = (@planet.star.itg+@planet.star.pirate)
+        mission_count = Math.round(frand(0,1)*activity*max_count)
+        @missions = []
+        i=0
+        while i < mission_count
+          person = new Person 'passenger', frand(0,1)<STATIONS[@name].fugitive_rate
+          mission = undefined
+          switch rand(0,4)
+            when 0
+              mission = new TaxiMission person
+            else
+              mission = new CrewMission person
+
+          @missions.push mission
+          ++i
+        console.log @missions
+
+      group: 'stations'
+      constructor: (planet, name, x,y) ->
+        @planet = planet
         @name = name
         @x = x
         @y = y
@@ -1324,15 +1366,13 @@ html ->
         @tileset = 'stations_tiles'
         @ang = 0
         @docking_count = 0
-
-      group: 'stations'
+      
       w:32
       h:32
       die: ->
         gbox.trashObject @
 
       first: ->
-        return if paused
         --@next_frame
         if @next_frame < 0
           @frame = @num*4 + ((@frame%4) + 1)%4
@@ -1346,7 +1386,7 @@ html ->
           @docking_count = 0
 
         if @docking_count > DOCKING_DURATION
-          planetmapMode()
+          stationMode @
           @docking_count = -DOCKING_DURATION
 
       blit: ->
@@ -1358,9 +1398,68 @@ html ->
           dx: Math.round(@x-cam.x)
           dy: Math.round(@y+@yoff-cam.y)
 
-    class StationScreen
+
+    STATION_SUB_SCREENS = [
+        name:'Cargo'
+        bg:'starmap_gui'
+      ,
+        name:'Missions'
+        bg:'starmap_gui'
+      ,
+        name:'Hangar'
+        bg:'starmap_gui'
+    ]
+
+    class StationScreen extends Menu
+      group: 'stationscreen'
       constructor: (station) ->
-        false
+        super()
+        @station = station
+        @skip = false
+        @sub_screen = 0
+        @sub_items = []
+        i=0
+        for scr in STATION_SUB_SCREENS
+          @sub_items.push []
+          switch scr.name
+            when 'Cargo'
+              false
+            when 'Missions'
+              @sub_items[i] = @station.missions
+            when 'Hangar'
+              false
+
+          ++i
+
+      c: ->
+        gbox.trashObject @
+        flightMode()
+
+      first: ->
+        if @skip
+          @skip = false
+          return
+        
+        if gbox.keyIsHit 'left'
+          @sub_screen -= 1
+          console.log 'l'
+        else if gbox.keyIsHit 'right'
+          @sub_screen += 1
+          console.log 'r'
+
+        if @sub_screen < 0
+          @sub_screen = STATION_SUB_SCREENS.length-1
+        @sub_screen = @sub_screen % STATION_SUB_SCREENS.length
+        @items = @sub_items[@sub_screen]
+        @update()
+
+      blit: ->
+        c = gbox.getBufferContext()
+        return if not c
+        gbox.blitAll c, gbox.getImage(STATION_SUB_SCREENS[@sub_screen].bg),
+          dx:0
+          dy:0
+        @render(0,0)
 
     PARTICLES = {
       fire:
@@ -1404,7 +1503,6 @@ html ->
           gbox.trashObject @
 
         first: ->
-          return if paused
           @x += @vx
           @y += @vy
           --@next_frame
@@ -1486,7 +1584,7 @@ html ->
         gbox.trashObject @
 
       first: ->
-        return if paused or !@active
+        return if !@active
 
         if @planet
           @x = @planet.x + @xoff
@@ -1517,6 +1615,7 @@ html ->
         'game'
         'starmap'
         'planetmap'
+        'stationscreen'
         'planet'
         'stations'
         'resources'
