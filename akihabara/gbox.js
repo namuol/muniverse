@@ -521,8 +521,9 @@ var gbox={
 	setCallback:function(cb) { this._cb=cb; },
 
 	_playobject:function(g,obj,a) {
-		if (gbox._objects[g][obj].initialize) {
+		if (!gbox._objects[g][obj].initialized && gbox._objects[g][obj].initialize) {
 			gbox._objects[g][obj].initialize(obj);
+			gbox._objects[g][obj].initialized = true;
 			delete gbox._objects[g][obj].initialize;
 		}
 		if (gbox._objects[g][obj][a]) gbox._objects[g][obj][a](obj,a);

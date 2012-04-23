@@ -47,6 +47,18 @@ html ->
       imageData.data[index + 2] = b
       imageData.data[index + 3] = a
 
+    circle = (c, strokeStyle, x,y, radius) ->
+      c.strokeStyle = strokeStyle
+      c.beginPath()
+      c.arc(
+        Math.round(x),
+        Math.round(y),
+        radius,
+        0, 2*Math.PI, false
+      )
+      c.stroke()
+
+
     maingame = undefined
     starcolors = []
     planetcolors = []
@@ -95,7 +107,7 @@ html ->
 
     loadResources = ->
       help.akihabaraInit
-        title: 'TINYVERSE (working title)'
+        title: 'MICROVERSE (working title)'
         width: W
         height: H
         zoom: 2
@@ -142,6 +154,26 @@ html ->
         gapx: 0
         gapy: 0
 
+      gbox.addImage 'stations', 'stations.png'
+      gbox.addTiles
+        id: 'stations_tiles'
+        image: 'stations'
+        tileh: 32
+        tilew: 32
+        tilerow: 4
+        gapx: 0
+        gapy: 0
+
+      gbox.addImage 'peoples', 'peoples.png'
+      gbox.addTiles
+        id: 'peoples_tiles'
+        image: 'peoples'
+        tileh: 8
+        tilew: 8
+        tilerow: 16
+        gapx: 0
+        gapy: 0
+
       gbox.addImage 'resources', 'resources.png'
       gbox.addTiles
         id: 'resources_tiles'
@@ -184,10 +216,98 @@ html ->
         gapy: 0
 
       gbox.loadAll main
+
+    planetmapMode = ->
+      stopGroups = [
+        'background'
+        'planet'
+        'player'
+        'baddies'
+        'drones'
+        'friend_shots'
+        'foe_shots'
+        'resources'
+        'particles'
+        'starmap'
+        'stations'
+      ]
+      for g in stopGroups
+        gbox.stopGroup g
+
+      groups = [
+        'planetmap'
+      ]
+      for g in groups
+        gbox.stopGroup g
+        gbox.toggleGroup g
+
+      player.skip = true
     
-    TURN_SPEED = 0.1
-    ACC = 0.01
-    DEC = 0.01
+    starmapMode = ->
+      stopGroups = [
+        'background'
+        'planet'
+        'player'
+        'baddies'
+        'drones'
+        'friend_shots'
+        'foe_shots'
+        'resources'
+        'particles'
+        'planetmap'
+        'stations'
+      ]
+      for g in stopGroups
+        gbox.stopGroup g
+
+      groups = [
+        'starmap'
+      ]
+      for g in groups
+        gbox.stopGroup g
+        gbox.toggleGroup g
+
+      player.skip = true
+
+   
+    flightMode = ->
+      gbox.clearGroup 'planet'
+      gbox.clearGroup 'resources'
+      gbox.clearGroup 'stations'
+      gbox.addObject player
+      gbox.addObject current_planet
+      if current_planet.itg_station
+        gbox.addObject current_planet.itg_station
+      if current_planet.pirate_station
+        gbox.addObject current_planet.pirate_station
+
+      current_planet.addResources()
+
+      stopGroups = [
+        'starmap'
+        'planetmap'
+      ]
+      for g in stopGroups
+        gbox.stopGroup g
+
+      groups = [
+        'background'
+        'planet'
+        'player'
+        'baddies'
+        'drones'
+        'friend_shots'
+        'foe_shots'
+        'resources'
+        'particles'
+        'stations'
+      ]
+      for g in groups
+        gbox.stopGroup g
+        gbox.toggleGroup g
+      player.skip = true
+
+    
     
     paused = false
     menuVisible = false
@@ -198,7 +318,6 @@ html ->
     
     togglePause = ->
       paused = !paused
-    
 
     class Menu
       constructor: ->
@@ -349,39 +468,34 @@ html ->
           @x += @vx
           @y += @vy
 
-    class Passenger
+    class PassengerIcon
       constructor: ->
+        @parts = []
+        @parts.push rand 0, 16
+        @parts.push rand 0, 16
+        @parts.push rand 0, 16
+
+      render: (x,y) ->
+        n=0
+        for partNum in @parts
+          gbox.blitTile gbox.getBufferContext(),
+            tileset: 'peoples_tiles'
+            tile: n*16 + partNum
+            dx: Math.round(x)
+            dy: Math.round(y)
+          ++n
+
+    class Passenger
+      constructor: (icon) ->
     
-    addHangarScreen = ->
-      gbox.addObject
-        group: 'hangar'
-        init: ->
-        first: ->
-          return if paused
-
-        initialize: ->
-          @init()
-
-        blit: ->
-          c = gbox.getBufferContext()
-          if c
-            c.putImageData @starmap, 0, 0
-            gbox.blitText gbox.getBufferContext(),
-              font: 'small'
-              text:"SEC: #{@sector.x},#{@sector.y}"
-              dx:1
-              dy:H-12
-              dw:64
-              dh:16
-
-    
-    BASE_THRUST = 0.05
+    BASE_THRUST = 0.025
     BASE_SHIELDS = 3
-    BASE_WCHARGE_RATE = 0.1
+    BASE_WCHARGE_RATE = 0.05
     BASE_WCHARGE_CAP = 2
     BASE_WSPEED = 2
     BASE_WPOWER = 1
     BASE_WSPAN = 80
+    TURN_SPEED = 0.1
     player = undefined
     class Player
       constructor: (name) ->
@@ -392,11 +506,12 @@ html ->
         @wpower = BASE_WPOWER
         @wspan = BASE_WSPAN
         @thrust = BASE_THRUST
-        @afterburn = 0.005
+        @afterburn = 0.025
         @shields = BASE_SHIELDS
 
         @cargo =
           fuel: 4
+        @init()
 
       fuel: ->
         return @cargo.fuel
@@ -408,6 +523,7 @@ html ->
       vx:0
       vy:0
       init: ->
+        @skip = false
         @frame = 0
         @tileset = 'ship0_tiles'
         @w = 8
@@ -423,12 +539,16 @@ html ->
 
       first: ->
         return if paused
+        if @skip
+          @skip = false
+          return
+
         going = false
         if gbox.keyIsPressed 'up'
           going = true
           @vx += @ax
           @vy += @ay
-        else if gbox.keyIsPressed 'down'
+        else if gbox.keyIsPressed('down') or gbox.keyIsPressed('b')
           @vx *= 1-@afterburn
           @vy *= 1-@afterburn
 
@@ -474,9 +594,15 @@ html ->
             ++i
           @shields -= shot.power
           shot.die()
+        
+        if not going
+          if Math.abs(@vx) < 0.2
+            @vx = 0
+          if Math.abs(@vy) < 0.2
+            @vy = 0
 
-      initialize: ->
-        @init()
+        if gbox.keyIsHit 'c'
+          planetmapMode()
 
       blit: ->
         gbox.blitTile gbox.getBufferContext(),
@@ -695,20 +821,22 @@ html ->
     MAX_STAR_PLANETS = 15
 
     class Star
-      constructor: (sector, x,y, color) ->
+      constructor: (sector, x,y, color, itg, piracy) ->
         @sector = sector
         @x = x
         @y = y
         @color = color
+        @pcount = rand 0,MAX_STAR_PLANETS
+        @itg = itg
+        @pirate = piracy
 
       generate_planets: ->
         Math.seedrandom BASE_SEED+'.'+@sector.x+'.'+@sector.y+'.'+@x+'.'+@y
         @radius = frand MIN_STAR_RAD, MAX_STAR_RAD
         @planets = []
-        pcount = rand 0,MAX_STAR_PLANETS
         p=0
-        while p < pcount
-          @planets.push new Planet false, p/pcount
+        while p < @pcount
+          @planets.push new Planet @, p, false
           ++p
 
       planet_count: ->
@@ -717,11 +845,18 @@ html ->
         for planet in @planets
           count += planet.count()
         return count
-
+    
+    MAX_ITG_REGIONS = 3
+    MIN_ITG_REGION_RADIUS = 10
+    MAX_ITG_REGION_RADIUS = 50
+    MAX_PIRATE_REGIONS = 3
+    MIN_PIRATE_REGION_RADIUS = 10
+    MAX_PIRATE_REGION_RADIUS = 50
     LY_SCALE = 0.25
     starmap = undefined
     class Starmap
       constructor: (x,y, density) ->
+        @skip = false
         @sector =
           x:x
           y:y
@@ -729,6 +864,26 @@ html ->
           x:0
           y:0
         Math.seedrandom BASE_SEED+x+','+y
+        @itg_regions = []
+        i=0
+        count=rand 0, MAX_ITG_REGIONS
+        while i < count
+          radius = frand MIN_ITG_REGION_RADIUS, MAX_ITG_REGION_RADIUS
+          @itg_regions.push
+            x: rand radius,W-radius
+            y: rand radius,H-radius-16
+            radius: radius
+          ++i
+        @pirate_regions = []
+        i=0
+        count=rand 0, MAX_PIRATE_REGIONS
+        while i < count
+          radius = frand MIN_PIRATE_REGION_RADIUS, MAX_PIRATE_REGION_RADIUS
+          @itg_regions.push
+            x: rand radius,W-radius
+            y: rand radius,H-radius-16
+            radius: radius
+          ++i
 
         # Generate stars!
         @stars = []
@@ -744,13 +899,39 @@ html ->
           color = choose starcolors
           x = frand 1, W-1
           y = frand 1, H-16-1
-          @stars.push new Star @sector, x,y, color
+          star = new Star @sector, x,y, color, @itg_factor(x,y), @pirate_factor(x,y)
+          star.sid = i
+          @stars.push star
           setPixel @starmap, Math.round(x),Math.round(y), color[0],color[1],color[2],color[3]
           ++i
         c.putImageData @starmap, 0,0
+      _factor: (x,y,pirate) ->
+        regions = undefined
+        if pirate
+          regions = @pirate_regions
+        else
+          regions = @itg_regions
+
+        fac = 0.0001
+        for region in regions
+          dx = (region.x-x)
+          dy = (region.y-y)
+          d = Math.sqrt(dx*dx + dy*dy)
+          fac += 1/ (d / region.radius)
+        return fac
+
+      pirate_factor: (x,y) ->
+        return @_factor(x,y,true)
+
+      itg_factor: (x,y) ->
+        return @_factor(x,y)
 
       first: ->
         return if paused
+        if @skip
+          @skip = false
+          return
+
         y=@cursor.y
         x=@cursor.x
         if gbox.keyIsPressed 'up'
@@ -762,17 +943,40 @@ html ->
         else if gbox.keyIsPressed 'right'
           @cursor.x += 0.5
 
+        if @closest_star and gbox.keyIsHit 'a'
+          gbox.clearGroup 'planetmap'
+          @closest_star.generate_planets()
+          window.planetmap = new Planetmap @closest_star
+          planetmap.skip = true
+          gbox.addObject planetmap
+          planetmapMode()
+          return
+
+        if current_planet and gbox.keyIsHit 'c'
+          flightMode()
+
         if !@closest_star or @cursor.x != x or @cursor.y != y
           @closest_star = @closest(@cursor.x,@cursor.y)
           dx = @current_star.x-@closest_star.x
           dy = @current_star.y-@closest_star.y
           @closest_star.dist = Math.sqrt(dx*dx+dy*dy)*LY_SCALE
 
-
       blit: ->
         c = gbox.getBufferContext()
         if c
           c.putImageData @starmap, 0, 0
+
+          for r in @itg_regions
+            circle c, 'blue',
+              Math.round(r.x),
+              Math.round(r.y),
+              r.radius
+          for r in @pirate_regions
+            circle c, 'red',
+              Math.round(r.x),
+              Math.round(r.y),
+              r.radius
+
           if @current_star
             gbox.blitText c,
               font: 'small'
@@ -797,15 +1001,10 @@ html ->
               tile: 2
               dx: Math.round(@closest_star.x)-4
               dy: Math.round(@closest_star.y)-4
-            c.strokeStyle = '#d97777'
-            c.beginPath()
-            c.arc(
+            circle c, '#d97777',
               Math.round(@current_star.x),
               Math.round(@current_star.y),
-              player.fuel()/LY_SCALE,
-              0, 2*Math.PI, false
-            )
-            c.stroke()
+              player.fuel()/LY_SCALE
 
       group: 'starmap'
       closest: (x,y) ->
@@ -830,6 +1029,7 @@ html ->
         max_moons: 8
         min_orbit: 0.5
         max_orbit: 1.0
+        station_prob: 0.5
         ring_prob: 0.25
 
       rocky:
@@ -840,19 +1040,31 @@ html ->
         max_orbit: 1.0
         min_moons: 0
         max_moons: 3
+        station_prob: 0.75
         ring_prob: 0.1
 
       moon:
         min_radius: 10
         max_radius: 20
+        station_prob: 0.25
         ring_prob: 0
 
+    current_planet = undefined
+    MIN_ITG_STATION_PROB = 0.1
+    MIN_PIRATE_STATION_PROB = 0.1
+    MIN_STATION_DIST = 100
     class Planet
-      constructor: (moon, orbit) ->
+      constructor: (star, num, moon) ->
+        @_x = 0#gbox.getScreenW()/2 - @w/2
+        @_y = 0#gbox.getScreenH()/2 - @h/2
+
+        @star = star
+        @num = num
+        @orbit = @star.pcount / @num
         if moon
           @ptype = 'moon'
           @color = rgba choose planetcolors[2]
-        else if orbit < GAS_GIANT_MIN_ORBIT and Math.random() < PLANET_CLASSES.gas_giant.prob
+        else if @orbit > GAS_GIANT_MIN_ORBIT and Math.random() < PLANET_CLASSES.gas_giant.prob
           @ptype = 'gas_giant'
           @color = rgba choose planetcolors[1]
         else
@@ -860,40 +1072,80 @@ html ->
           @color = rgba choose planetcolors[0]
 
         cls = PLANET_CLASSES[@ptype]
-
         @radius = frand cls.min_radius, cls.max_radius
+
+        @wealth = Math.random()
+        max_resource_count = ((Math.PI * @radius*@radius) / 50) * @wealth
+        @resources = {}
+        for own name,res of RESOURCES
+          @resources[name] = []
+          count = Math.round(frand(0,res[@ptype+'_prob']) * max_resource_count)
+          c=0
+          while c < count
+            ang = Math.PI*2 * Math.random()
+            r=@radius*Math.random()
+            x=r*Math.cos(ang)
+            y=r*Math.sin(ang)
+            @resources[name].push new Resource name, x,y, 0,0, @
+            ++c
+
+        @itg_station = null
+        @pirate_station = null
+        itg_station_prob = cls.station_prob * @star.itg + MIN_ITG_STATION_PROB
+        pirate_station_prob = cls.station_prob * @star.pirate + MIN_PIRATE_STATION_PROB
+        #console.log itg_station_prob
+        #console.log pirate_station_prob
+        if Math.random() < itg_station_prob
+          r = MIN_STATION_DIST + @radius * 2
+          ang = Math.random() * 2*Math.PI
+          x = @_x + r*Math.cos ang
+          y = @_y + r*Math.sin ang
+          @itg_station = new Station 'itg', x,y
+
+        if Math.random() < pirate_station_prob
+          r =MIN_STATION_DIST + @radius * 4
+          ang = Math.random() * 2*Math.PI
+          x = @_x + r*Math.cos ang
+          y = @_y + r*Math.sin ang
+          @pirate_station = new Station 'pirate', x,y
 
         @moons = []
         return if moon
-        mcount = rand cls.min_moons, cls.max_moons
+        mcount = Math.round(rand(cls.min_moons, cls.max_moons)*(@radius/120))
         m=0
         while m < mcount
-          @moons.push new Planet true
+          @moons.push new Planet star, 0, true
           ++m
+        @init()
+
+      addResources: ->
+        for own k,v of @resources
+          for r in v
+            gbox.addObject r
 
       count: ->
         return 1 + @moons.length
 
       group: 'planet'
-      init: (x,y) ->
-        @x = x#gbox.getScreenW()/2 - @w/2
-        @y = y#gbox.getScreenH()/2 - @h/2
+      init: ->
         @ang = 0
         @xoff = 0
         @yoff = 0
         @dist = 3
 
+        #console.log 'init'
         # Sunlight direction:
         @dirx = frand(-@radius,@radius)
         @diry = frand(-@radius*.1,@radius*.1)
 
+
       first: ->
         return if paused
         @ang += 0.02 #Math.random() * Math.PI*2
+        @xoff = 0
         @yoff = 3*Math.sin @ang
-
-      initialize: ->
-        @init(W/2-@radius, H/2-@radius)
+        @x = Math.round @_x + @xoff
+        @y = Math.round @_y + @yoff
 
       render: (scale, x,y, dirx,diry) ->
         ctx = gbox.getBufferContext()
@@ -902,7 +1154,7 @@ html ->
         dirx *= scale
         diry *= scale
         ctx.beginPath()
-        grd = ctx.createRadialGradient x+dirx,y+diry, 0, x+dirx,y+diry, @radius*1.4
+        grd = ctx.createRadialGradient x+dirx,y+diry, 0, x+dirx,y+diry, radius*1.4
         grd.addColorStop 0, @color
         grd.addColorStop 1, '#000510'
         ctx.fillStyle = grd
@@ -911,49 +1163,88 @@ html ->
         ctx.closePath()
 
       blit: ->
-        x = Math.round @x+@xoff-cam.x
-        y = Math.round @y+@yoff-cam.y
+        x = Math.round @x-cam.x
+        y = Math.round @y-cam.y
         @render 1.0, x,y, @dirx, @diry
     
-    planetmap = undefined
+    window.planetmap = undefined
     class Planetmap
       group: 'planetmap'
       constructor: (star) ->
+        @skip = false
         @star = star
         @tick = 0
+        @cursor =
+          x:0
+          y:0
+
+        @positions = []
+        y = H/2
+        p=0
+        for planet in @star.planets
+          @positions.push []
+          x = W*0.1 + (W*0.8) * ((p+1)/@star.planets.length)
+          planet.cursorpos =
+            x:x
+            y:y
+          @positions[p].push planet.cursorpos
+          m=0
+          for moon in planet.moons
+            moon.cursorpos =
+              x:x
+              y:y+(planet.radius*0.5+(m+1)*PLANET_CLASSES.moon.max_radius)*0.5
+
+            @positions[p].push moon.cursorpos
+            ++m
+          ++p
+
 
       first: ->
         return if paused
-        if gbox.keyIsPressed 'b'
-          # TODO RETURN TO STARMAP
+        if @skip
+          @skip = false
+          return
 
-        ###
-        y=@cursor.y
-        x=@cursor.x
-        if gbox.keyIsPressed 'up'
-          @cursor.y -= 0.5
-        else if gbox.keyIsPressed 'down'
-          @cursor.y += 0.5
-        if gbox.keyIsPressed 'left'
-          @cursor.x -= 0.5
-        else if gbox.keyIsPressed 'right'
-          @cursor.x += 0.5
+        if gbox.keyIsHit 'c'
+          starmapMode()
+          return
 
-        if !@closest_star or @cursor.x != x or @cursor.y != y
-          @closest_star = @closest(@cursor.x,@cursor.y)
-          dx = @current_star.x-@closest_star.x
-          dy = @current_star.y-@closest_star.y
-          @closest_star.dist = Math.sqrt(dx*dx+dy*dy)*LY_SCALE
-        ###
+        if gbox.keyIsHit 'a'
+          if @cursor.y
+            current_planet = @star.planets[@cursor.x].moons[@cursor.y-1]
+          else
+            current_planet = @star.planets[@cursor.x]
+          current_planet.init()
+          starmap.current_star = current_planet.star
+          player.vx = 0
+          player.vy = 0
+          player.x = 0
+          player.y = 0
+          flightMode()
+
+        return if @positions.length is 0
+        if gbox.keyIsHit 'up'
+          @cursor.y -= 1
+        else if gbox.keyIsHit 'down'
+          @cursor.y += 1
+        if gbox.keyIsHit 'left'
+          @cursor.x -= 1
+        else if gbox.keyIsHit 'right'
+          @cursor.x += 1
+
+        if @cursor.x < 0
+          @cursor.x = @positions.length - 1
+        if @cursor.y < 0
+          @cursor.y = @positions[@cursor.x].length - 1
+        @cursor.x = @cursor.x % @positions.length
+        @cursor.y = @cursor.y % @positions[@cursor.x].length
+
       blit: ->
         c = gbox.getBufferContext()
         if c
           gbox.blitAll c, gbox.getImage('starmap_gui'),
             dx:0
             dy:0
-
-          y = H/2
-          p=0
 
           gbox.blitText c,
             font: 'small'
@@ -963,19 +1254,113 @@ html ->
             dw:64
             dh:16
 
+          return if @positions.length is 0
+
+          p=0
           for planet in @star.planets
-            x = W*0.1 + (W*0.8) * ((p+1)/@star.planets.length)
-            planet.render 0.25, x,y, -planet.radius*2,0
-            m=1
-            for moon in planet.moons
-              moon.render 0.25,
-                x,
-                y+(planet.radius*0.5+m*PLANET_CLASSES.moon.max_radius)*0.5,
-                -moon.radius*2,0
-              ++m
+            if p != @cursor.x
+              x = @positions[p][0].x
+              y = @positions[p][0].y
+              planet.render 0.25, x,y, -planet.radius,0
+              m=0
+              for moon in planet.moons
+                x = @positions[p][m+1].x
+                y = @positions[p][m+1].y
+                moon.render 0.25,
+                  x,
+                  y,
+                  -moon.radius,0
+                ++m
             ++p
 
+          p = @cursor.x
+          planet = @star.planets[p]
+          x = @positions[p][0].x
+          y = @positions[p][0].y
 
+          planet.render 0.25, x,y, -planet.radius*0.5,0
+          m=0
+          for moon in planet.moons
+            x = @positions[p][m+1].x
+            y = @positions[p][m+1].y
+            moon.render 0.25,
+              x,
+              y,
+              -moon.radius*0.5,0
+            ++m
+         
+
+          if current_planet and current_planet.star is @star
+            gbox.blitTile c,
+              tileset: 'cursors'
+              tile: 3
+              dx: Math.round(current_planet.cursorpos.x)
+              dy: Math.round(current_planet.cursorpos.y)-4
+          gbox.blitTile c,
+            tileset: 'cursors'
+            tile: 4
+            dx: Math.round(@positions[@cursor.x][@cursor.y].x)
+            dy: Math.round(@positions[@cursor.x][@cursor.y].y)-4
+
+    STATIONS = {
+      'itg':
+        num:0
+        frame_length:60/2
+      'pirate':
+        num:1
+        frame_length:60/2
+    }
+
+    DOCKING_DURATION = 80
+    class Station
+      constructor: (name, x,y) ->
+        @name = name
+        @x = x
+        @y = y
+        @num = STATIONS[@name].num
+        @frame_length = STATIONS[@name].frame_length
+        @next_frame = @frame_length
+        @frame = @num*4
+        @tileset = 'stations_tiles'
+        @ang = 0
+        @docking_count = 0
+
+      group: 'stations'
+      w:32
+      h:32
+      die: ->
+        gbox.trashObject @
+
+      first: ->
+        return if paused
+        --@next_frame
+        if @next_frame < 0
+          @frame = @num*4 + ((@frame%4) + 1)%4
+          @next_frame = @frame_length
+        @ang += 0.034
+        @yoff = 2*Math.sin @ang
+
+        if !player.going and gbox.collides @, player
+          ++@docking_count
+        else
+          @docking_count = 0
+
+        if @docking_count > DOCKING_DURATION
+          planetmapMode()
+          @docking_count = -DOCKING_DURATION
+
+      blit: ->
+        gbox.blitTile gbox.getBufferContext(),
+          tileset: @tileset
+          tile: @frame
+          #dx:current_planet.x
+          #dy:current_planet.y
+          dx: Math.round(@x-cam.x)
+          dy: Math.round(@y+@yoff-cam.y)
+
+    class StationScreen
+      constructor: (station) ->
+        false
 
     PARTICLES = {
       fire:
@@ -1041,78 +1426,90 @@ html ->
             dx: Math.round(@x-cam.x)
             dy: Math.round(@y-cam.y)
 
-    RESOURCES = {
-      'SCRAP METAL':
+    RESOURCES =
+      'scrap metal':
         num:0
         tons_per_unit:1
-      'LIFEFORMS':
+        gas_giant_prob: 0.1
+        rocky_prob: 0.5
+        moon_prob: 0.75
+      'lifeforms':
         num:1
         tons_per_unit:0.05
-      'FUEL':
+        gas_giant_prob: 0.05
+        rocky_prob: 0.2
+        moon_prob: 0.1
+      'fuel':
         num:2
         tons_per_unit:0.25
-      'MINERALS':
+        gas_giant_prob: 0.25
+        rocky_prob: 0.1
+        moon_prob: 0.1
+      'minerals':
         num:3
-        tons_per_unit:0.1
-      'NARCOTICS':
+        tons_per_unit:0.5
+        gas_giant_prob: 0.05
+        rocky_prob: 0.5
+        moon_prob: 0.2
+      'narcotics':
         num:4
         tons_per_unit:0.01
-    }
+        gas_giant_prob: 0
+        rocky_prob: 0
+        moon_prob: 0
 
-    addResource = (name, x,y, vx,vy, planet) ->
-      num = RESOURCES[name].num
+    class Resource
+      group: 'resources'
+      constructor: (name, x,y, vx,vy, planet) ->
+        @planet = planet
+        @num = RESOURCES[name].num
+        @next_frame = @frame_length
+        @frame = rand @num*8, @num*8 + 8
+        @tileset = 'resources_tiles'
+        @w = 3
+        @h = 3
+        if vx and vy
+          @vx = vx
+          @vy = vy
+        @tick = 0
+        @xoff = x
+        @yoff = y
+        @x = 0
+        @y = 0
+        @active = true
 
-      gbox.addObject
-        group: 'resources'
-        num:num
-        w:0.1
-        h:0.1
-        vx:0
-        vy:0
-        frame_length: 4
-        init: ->
+      frame_length: 4
+      vx:0
+      vy:0
+      die: ->
+        @active = false
+        gbox.trashObject @
+
+      first: ->
+        return if paused or !@active
+
+        if @planet
+          @x = @planet.x + @xoff
+          @y = @planet.y + @yoff
+        else
+          @x += @vx
+          @y += @vy
+          @vx *= 0.005
+          @vy *= 0.005
+
+        --@next_frame
+
+        if @next_frame < 0
+          @frame = @num*8 + ((@frame%8) + 1)%8
           @next_frame = @frame_length
-          @frame = rand @num*8, @num*8 + 8
-          @tileset = 'resources_tiles'
-          @w = 3
-          @h = 3
-          if vx and vy
-            @vx = vx
-            @vy = vy
-          @tick = 0
-          @x = x
-          @y = y
 
-        die: ->
-          gbox.trashObject @
-
-        first: ->
-          return if paused
-
-          if planet
-            @x = planet.x + x
-            @y = planet.y + y
-          else
-            @x += @vx
-            @y += @vy
-            @vx *= 0.005
-            @vy *= 0.005
-
-          --@next_frame
-
-          if @next_frame < 0
-            @frame = @num*8 + ((@frame%8) + 1)%8
-            @next_frame = @frame_length
-
-        initialize: ->
-          @init()
-
-        blit: ->
-          gbox.blitTile gbox.getBufferContext(),
-            tileset: @tileset
-            tile: @frame
-            dx: Math.round(@x-cam.x)
-            dy: Math.round(@y-cam.y)
+      blit: ->
+        return if !@active
+        gbox.blitTile gbox.getBufferContext(),
+          tileset: @tileset
+          tile: @frame
+          dx: Math.round(@x-cam.x)
+          dy: Math.round(@y-cam.y)
 
     main = ->
       gbox.setGroups [
@@ -1121,6 +1518,7 @@ html ->
         'starmap'
         'planetmap'
         'planet'
+        'stations'
         'resources'
         'particles'
         'player'
@@ -1151,7 +1549,7 @@ html ->
         gbox.keyIsHit 'a'
 
       maingame.initializeGame = ->
-        addPauseScreen()
+        #addPauseScreen()
         player = new Player
         starmap = new Starmap 5,34,0.6
         starmap.current_star = choose starmap.stars
@@ -1159,10 +1557,12 @@ html ->
           x: starmap.current_star.x
           y: starmap.current_star.y
         starmap.current_star.generate_planets()
-        planetmap = new Planetmap starmap.current_star
+        current_planet = choose starmap.current_star.planets
+        window.planetmap = new Planetmap starmap.current_star
 
         gbox.addObject starmap
-        gbox.addObject planetmap
+
+        cam = addCamera()
 
         gbox.addObject
           id: 'bg_id'
@@ -1203,5 +1603,4 @@ html ->
               dy:Math.round -cam.y % H
 
       gbox.go()
-      gbox.stopGroup 'starmap'
     window.addEventListener 'load', loadResources, false
