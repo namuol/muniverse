@@ -1,5 +1,5 @@
-<html><head><script type="text/javascript" src="akihabara/gbox.js"></script><script type="text/javascript" src="akihabara/iphopad.js"></script><script type="text/javascript" src="akihabara/trigo.js"></script><script type="text/javascript" src="akihabara/toys.js"></script><script type="text/javascript" src="akihabara/help.js"></script><script type="text/javascript" src="akihabara/tool.js"></script><script type="text/javascript" src="akihabara/gamecycle.js"></script><script type="text/javascript" src="seedrandom-min.js"></script><link rel="stylesheet" href="style.css" /><meta name="viewport" content="width:device-width; initial-scale:1.0; maximum-scale:1.0; user-scalable:0;" /></head><body><div class="directions"></div><canvas width="327" height="1" style="display:none" id="starcolors"></canvas><canvas width="320" height="320" style="display:none" id="starmap"></canvas></body><script>var __slice = Array.prototype.slice;var __hasProp = Object.prototype.hasOwnProperty;var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };var __extends = function(child, parent) {  for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }  function ctor() { this.constructor = child; }  ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype;  return child; };var __indexOf = Array.prototype.indexOf || function(item) {  for (var i = 0, l = this.length; i < l; i++) {    if (this[i] === item) return i;  } return -1; };(function () {
-    var BASE_SEED, choose, frand, getPixel, rand, rgba, setPixel, starcolors_el;
+<html><head><script type="text/javascript" src="akihabara/gbox.js"></script><script type="text/javascript" src="akihabara/iphopad.js"></script><script type="text/javascript" src="akihabara/trigo.js"></script><script type="text/javascript" src="akihabara/toys.js"></script><script type="text/javascript" src="akihabara/help.js"></script><script type="text/javascript" src="akihabara/tool.js"></script><script type="text/javascript" src="akihabara/gamecycle.js"></script><script type="text/javascript" src="seedrandom-min.js"></script><link rel="stylesheet" href="style.css" /><meta name="viewport" content="width:device-width; initial-scale:1.0; maximum-scale:1.0; user-scalable:0;" /></head><body><div class="directions"></div><canvas width="327" height="1" style="display:none" id="starcolors"></canvas><canvas width="16" height="3" style="display:none" id="planetcolors"></canvas><canvas width="320" height="320" style="display:none" id="starmap"></canvas></body><script>var __slice = Array.prototype.slice;var __hasProp = Object.prototype.hasOwnProperty;var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };var __extends = function(child, parent) {  for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }  function ctor() { this.constructor = child; }  ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype;  return child; };var __indexOf = Array.prototype.indexOf || function(item) {  for (var i = 0, l = this.length; i < l; i++) {    if (this[i] === item) return i;  } return -1; };(function () {
+    var BASE_SEED, BASE_SHIELDS, BASE_THRUST, BASE_WCHARGE_CAP, BASE_WCHARGE_RATE, BASE_WPOWER, BASE_WSPAN, BASE_WSPEED, CabinDweller, CrewMission, DOCKING_DURATION, GAS_GIANT_MIN_ORBIT, H, LY_SCALE, MAX_ITG_REGIONS, MAX_ITG_REGION_RADIUS, MAX_PIRATE_REGIONS, MAX_PIRATE_REGION_RADIUS, MAX_STAR_COUNT, MAX_STAR_PLANETS, MAX_STAR_RAD, MIN_ITG_REGION_RADIUS, MIN_ITG_STATION_PROB, MIN_PIRATE_REGION_RADIUS, MIN_PIRATE_STATION_PROB, MIN_STAR_COUNT, MIN_STAR_RAD, MIN_STATION_DIST, Menu, MenuItem, Mission, PARTICLES, PLANET_CLASSES, Person, Planet, Planetmap, Player, RESOURCES, Resource, STATIONS, STATION_SUB_SCREENS, Star, Starmap, Station, StationScreen, TURN_SPEED, TaxiMission, W, addBaddie, addCamera, addDrone, addParticle, addShot, cam, choose, circle, current_planet, flightMode, frand, getPixel, groupCollides, loadColors, loadResources, main, maingame, planetcolors, planetmapMode, player, rand, rgba, setPixel, starcolors, starmap, starmapMode, stationMode;
     BASE_SEED = 'WEEEEE';
     Math.seedrandom(BASE_SEED);
     window.clamp = function(num, min, max) {
@@ -14,8 +14,8 @@
     choose = function(array) {
       return array[rand(0, array.length - 1)];
     };
-    rgba = function(r, g, b, a) {
-      return "rgba(" + r + "," + g + "," + b + "," + a;
+    rgba = function(c) {
+      return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + c[3] + ")";
     };
     getPixel = function(img, x, y) {
       var a, b, g, pos, r;
@@ -34,10 +34,18 @@
       imageData.data[index + 2] = b;
       return imageData.data[index + 3] = a;
     };
-    starcolors_el = new Image();
-    starcolors_el.onload = function() {
-      var ACC, DEC, GRID_H, GRID_W, H, MAX_STAR_RAD, MIN_STAR_RAD, Menu, OFF_RADIUS, TURN_SPEED, W, addBaddie, addCamera, addDrone, addPauseScreen, addPlanet, addPlanetMap, addPlayer, addShot, addStarmap, cam, groupCollides, idx, loadResources, main, maingame, menuVisible, paused, player, rootMenu, starcolors, starcolors_canvas, starcolors_ctx, starcolors_img, starmapMenu, togglePause;
-      maingame = void 0;
+    circle = function(c, strokeStyle, x, y, radius) {
+      c.strokeStyle = strokeStyle;
+      c.beginPath();
+      c.arc(Math.round(x), Math.round(y), radius, 0, 2 * Math.PI, false);
+      return c.stroke();
+    };
+    maingame = void 0;
+    starcolors = [];
+    planetcolors = [];
+    loadColors = function() {
+      var idx, idy, planetcolors_canvas, planetcolors_ctx, planetcolors_el, planetcolors_img, starcolors_canvas, starcolors_ctx, starcolors_el, starcolors_img, _results;
+      starcolors_el = gbox.getImage('starcolors');
       starcolors_canvas = document.getElementById('starcolors');
       starcolors_ctx = starcolors_canvas.getContext('2d');
       starcolors_ctx.drawImage(starcolors_el, 0, 0);
@@ -48,764 +56,1835 @@
         starcolors.push(getPixel(starcolors_img, idx, 0));
         ++idx;
       }
-      W = 320;
-      H = 320;
-      groupCollides = function(obj, group, callback) {
-        var gobj, id, _ref;
-        _ref = gbox.getGroup(group);
-        for (id in _ref) {
-          if (!__hasProp.call(_ref, id)) continue;
-          gobj = _ref[id];
-          if (gbox.collides(obj, gobj)) {
-            if (callback) {
-              callback(gobj);
-            } else {
-              return true;
-            }
+      planetcolors_el = gbox.getImage('planetcolors');
+      planetcolors_canvas = document.getElementById('planetcolors');
+      planetcolors_ctx = planetcolors_canvas.getContext('2d');
+      planetcolors_ctx.drawImage(planetcolors_el, 0, 0);
+      planetcolors_img = planetcolors_ctx.getImageData(0, 0, planetcolors_canvas.width, planetcolors_canvas.height);
+      planetcolors = [];
+      idy = 0;
+      _results = [];
+      while (idy < planetcolors_el.height) {
+        planetcolors.push([]);
+        idx = 0;
+        while (idx < planetcolors_el.width) {
+          planetcolors[idy].push(getPixel(planetcolors_img, idx, idy));
+          ++idx;
+        }
+        _results.push(++idy);
+      }
+      return _results;
+    };
+    W = 320;
+    H = 320;
+    groupCollides = function(obj, group, callback) {
+      var gobj, id, _ref;
+      _ref = gbox.getGroup(group);
+      for (id in _ref) {
+        if (!__hasProp.call(_ref, id)) continue;
+        gobj = _ref[id];
+        if (gbox.collides(obj, gobj)) {
+          if (callback) {
+            callback(gobj);
+          } else {
+            return true;
           }
         }
+      }
+    };
+    loadResources = function() {
+      help.akihabaraInit({
+        title: 'MICROVERSE (working title)',
+        width: W,
+        height: H,
+        zoom: 2
+      });
+      gbox.setFps(60);
+      gbox.addImage('starcolors', 'starcolors.png');
+      gbox.addImage('planetcolors', 'planetcolors.png');
+      gbox.addImage('starmap_gui', 'starmap_gui.png');
+      gbox.addImage('starmap_gui_cursors', 'starmap_gui_cursors.png');
+      gbox.addTiles({
+        id: 'cursors',
+        image: 'starmap_gui_cursors',
+        tileh: 9,
+        tilew: 9,
+        tilerow: 1,
+        gapx: 0,
+        gapy: 0
+      });
+      gbox.addImage('bg', 'bg.png');
+      gbox.addImage('logo', 'logo.png');
+      gbox.addImage('ship0', 'ship0.png');
+      gbox.addTiles({
+        id: 'ship0_tiles',
+        image: 'ship0',
+        tileh: 8,
+        tilew: 8,
+        tilerow: 16,
+        gapx: 0,
+        gapy: 0
+      });
+      gbox.addImage('bad0', 'bad0.png');
+      gbox.addImage('planet0', 'planet0.png');
+      gbox.addImage('drones', 'drones.png');
+      gbox.addTiles({
+        id: 'drones_tiles',
+        image: 'drones',
+        tileh: 5,
+        tilew: 5,
+        tilerow: 3,
+        gapx: 0,
+        gapy: 0
+      });
+      gbox.addImage('stations', 'stations.png');
+      gbox.addTiles({
+        id: 'stations_tiles',
+        image: 'stations',
+        tileh: 32,
+        tilew: 32,
+        tilerow: 4,
+        gapx: 0,
+        gapy: 0
+      });
+      gbox.addImage('peoples', 'peoples.png');
+      gbox.addTiles({
+        id: 'peoples_tiles',
+        image: 'peoples',
+        tileh: 16,
+        tilew: 16,
+        tilerow: 16,
+        gapx: 0,
+        gapy: 0
+      });
+      gbox.addImage('resources', 'resources.png');
+      gbox.addTiles({
+        id: 'resources_tiles',
+        image: 'resources',
+        tileh: 1,
+        tilew: 1,
+        tilerow: 8,
+        gapx: 0,
+        gapy: 0
+      });
+      gbox.addImage('particles', 'particles.png');
+      gbox.addTiles({
+        id: 'particles_tiles',
+        image: 'particles',
+        tileh: 1,
+        tilew: 1,
+        tilerow: 16,
+        gapx: 0,
+        gapy: 0
+      });
+      gbox.addImage('shots', 'shots.png');
+      gbox.addTiles({
+        id: 'shots_tiles',
+        image: 'shots',
+        tileh: 3,
+        tilew: 3,
+        tilerow: 9,
+        gapx: 0,
+        gapy: 0
+      });
+      gbox.addImage('font', 'font.png');
+      gbox.addFont({
+        id: 'small',
+        image: 'font',
+        firstletter: '!',
+        tileh: 8,
+        tilew: 8,
+        tilerow: 20,
+        gapx: 0,
+        gapy: 0
+      });
+      return gbox.loadAll(main);
+    };
+    stationMode = function(station) {
+      var g, groups, stationscreen, stopGroups, _i, _j, _len, _len2;
+      stopGroups = ['background', 'planet', 'player', 'baddies', 'drones', 'friend_shots', 'foe_shots', 'resources', 'particles', 'starmap', 'stations'];
+      for (_i = 0, _len = stopGroups.length; _i < _len; _i++) {
+        g = stopGroups[_i];
+        gbox.stopGroup(g);
+      }
+      stationscreen = new StationScreen(station);
+      gbox.addObject(stationscreen);
+      groups = ['stationscreen'];
+      for (_j = 0, _len2 = groups.length; _j < _len2; _j++) {
+        g = groups[_j];
+        gbox.stopGroup(g);
+        gbox.toggleGroup(g);
+      }
+      return player.skip = true;
+    };
+    planetmapMode = function() {
+      var g, groups, stopGroups, _i, _j, _len, _len2;
+      stopGroups = ['background', 'planet', 'player', 'baddies', 'drones', 'friend_shots', 'foe_shots', 'resources', 'particles', 'starmap', 'stations'];
+      for (_i = 0, _len = stopGroups.length; _i < _len; _i++) {
+        g = stopGroups[_i];
+        gbox.stopGroup(g);
+      }
+      groups = ['planetmap'];
+      for (_j = 0, _len2 = groups.length; _j < _len2; _j++) {
+        g = groups[_j];
+        gbox.stopGroup(g);
+        gbox.toggleGroup(g);
+      }
+      return player.skip = true;
+    };
+    starmapMode = function() {
+      var g, groups, stopGroups, _i, _j, _len, _len2;
+      stopGroups = ['background', 'planet', 'player', 'baddies', 'drones', 'friend_shots', 'foe_shots', 'resources', 'particles', 'planetmap', 'stations'];
+      for (_i = 0, _len = stopGroups.length; _i < _len; _i++) {
+        g = stopGroups[_i];
+        gbox.stopGroup(g);
+      }
+      groups = ['starmap'];
+      for (_j = 0, _len2 = groups.length; _j < _len2; _j++) {
+        g = groups[_j];
+        gbox.stopGroup(g);
+        gbox.toggleGroup(g);
+      }
+      return player.skip = true;
+    };
+    flightMode = function(reset) {
+      var g, groups, stopGroups, _i, _j, _len, _len2;
+      if (reset) {
+        gbox.clearGroup('friend_shots');
+        gbox.clearGroup('foe_shots');
+        gbox.clearGroup('particles');
+      }
+      gbox.clearGroup('planet');
+      gbox.clearGroup('resources');
+      gbox.clearGroup('stations');
+      gbox.addObject(player);
+      gbox.addObject(current_planet);
+      if (current_planet.itg_station) gbox.addObject(current_planet.itg_station);
+      if (current_planet.pirate_station) {
+        gbox.addObject(current_planet.pirate_station);
+      }
+      current_planet.addResources();
+      stopGroups = ['starmap', 'planetmap'];
+      for (_i = 0, _len = stopGroups.length; _i < _len; _i++) {
+        g = stopGroups[_i];
+        gbox.stopGroup(g);
+      }
+      groups = ['background', 'planet', 'player', 'baddies', 'drones', 'friend_shots', 'foe_shots', 'resources', 'particles', 'stations'];
+      for (_j = 0, _len2 = groups.length; _j < _len2; _j++) {
+        g = groups[_j];
+        gbox.stopGroup(g);
+        gbox.toggleGroup(g);
+      }
+      return player.skip = true;
+    };
+    cam = {
+      x: 0,
+      y: 0
+    };
+    Menu = (function() {
+
+      function Menu() {
+        this.selected = 0;
+        this.items = [];
+      }
+
+      Menu.prototype.up = function() {
+        var _results;
+        if (this.items.length === 0) return;
+        this.selected = (this.selected - 1) % this.items.length;
+        if (this.selected < 0) this.selected = this.items.length - 1;
+        _results = [];
+        while (this.items[this.selected].disabled) {
+          _results.push(this.selected = (this.selected - 1) % this.items.length);
+        }
+        return _results;
       };
-      loadResources = function() {
-        help.akihabaraInit({
-          title: 'TINYVERSE (working title)',
-          width: W,
-          height: H,
-          zoom: 2
-        });
-        gbox.setFps(60);
-        gbox.addImage('bg', 'bg.png');
-        gbox.addImage('logo', 'logo.png');
-        gbox.addImage('ship0', 'ship0.png');
-        gbox.addTiles({
-          id: 'ship0_tiles',
-          image: 'ship0',
-          tileh: 8,
-          tilew: 8,
-          tilerow: 16,
-          gapx: 0,
-          gapy: 0
-        });
-        gbox.addImage('bad0', 'bad0.png');
-        gbox.addImage('planet0', 'planet0.png');
-        gbox.addImage('drones', 'drones.png');
-        gbox.addTiles({
-          id: 'drones_tiles',
-          image: 'drones',
-          tileh: 5,
-          tilew: 5,
-          tilerow: 3,
-          gapx: 0,
-          gapy: 0
-        });
-        gbox.addImage('resources', 'resources.png');
-        gbox.addTiles({
-          id: 'resources_tiles',
-          image: 'resources',
-          tileh: 1,
-          tilew: 1,
-          tilerow: 16,
-          gapx: 0,
-          gapy: 0
-        });
-        gbox.addImage('shots', 'shots.png');
-        gbox.addTiles({
-          id: 'shots_tiles',
-          image: 'shots',
-          tileh: 3,
-          tilew: 3,
-          tilerow: 9,
-          gapx: 0,
-          gapy: 0
-        });
-        gbox.addImage('font', 'font.png');
-        gbox.addFont({
-          id: 'small',
-          image: 'font',
-          firstletter: 'A',
-          tileh: 8,
-          tilew: 8,
-          tilerow: 13,
-          gapx: 0,
-          gapy: 0
-        });
-        return gbox.loadAll(main);
+
+      Menu.prototype.down = function() {
+        var _results;
+        if (this.items.length === 0) return;
+        this.selected = (this.selected + 1) % this.items.length;
+        _results = [];
+        while (this.items[this.selected].disabled) {
+          _results.push(this.selected = (this.selected + 1) % this.items.length);
+        }
+        return _results;
       };
-      TURN_SPEED = 0.1;
-      ACC = 0.01;
-      DEC = 0.01;
-      paused = false;
-      menuVisible = false;
-      player = void 0;
-      cam = {
+
+      Menu.prototype.a = function() {
+        if (this.items[this.selected]) return this.items[this.selected].a();
+      };
+
+      Menu.prototype.b = function() {
+        if (this.items[this.selected]) return this.items[this.selected].b();
+      };
+
+      Menu.prototype.c = function() {
+        if (this.items[this.selected]) return this.items[this.selected].c();
+      };
+
+      Menu.prototype.update = function() {
+        if (gbox.keyIsHit('a')) this.a();
+        if (gbox.keyIsHit('b')) this.b();
+        if (gbox.keyIsHit('c')) this.c();
+        if (gbox.keyIsHit('up')) {
+          return this.up();
+        } else if (gbox.keyIsHit('down')) {
+          return this.down();
+        }
+      };
+
+      Menu.prototype.render = function(x, yoff) {
+        var alpha, height, item, num, top, _i, _len, _ref, _results;
+        height = 17 * this.items.length;
+        top = H / 2 - height / 2 + yoff;
+        top -= 17;
+        num = 0;
+        _ref = this.items;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          item = _ref[_i];
+          top += 17;
+          if (!item.disabled) {
+            if (this.selected === num) {
+              alpha = 1;
+            } else {
+              alpha = 0.5;
+            }
+          } else {
+            alpha = 0.25;
+          }
+          ++num;
+          _results.push(item.render(x, top, alpha));
+        }
+        return _results;
+      };
+
+      return Menu;
+
+    })();
+    MenuItem = (function() {
+
+      function MenuItem(text) {
+        this.text = text;
+      }
+
+      MenuItem.prototype.a = function() {};
+
+      MenuItem.prototype.b = function() {};
+
+      MenuItem.prototype.c = function() {};
+
+      MenuItem.prototype.render = function(x, top, alpha) {
+        return gbox.blitText(gbox.getBufferContext(), {
+          font: 'small',
+          text: this.text(),
+          dx: x,
+          dy: top,
+          dw: W,
+          dh: 16,
+          halign: gbox.ALIGN_LEFT,
+          valign: gbox.ALIGN_TOP,
+          alpha: alpha
+        });
+      };
+
+      return MenuItem;
+
+    })();
+    addCamera = function() {
+      return gbox.addObject({
+        id: 'cam_id',
         x: 0,
-        y: 0
+        y: 0,
+        vx: 0,
+        vy: 0,
+        group: 'game',
+        init: function() {
+          this.x = 100;
+          this.y = 100;
+          this.vx = 0;
+          return this.vy = 0;
+        },
+        first: function() {
+          this.vx = (player.x + player.vx * 60 - (this.x + 160)) * 0.05;
+          this.vy = (player.y + player.vy * 60 - (this.y + 160)) * 0.05;
+          this.x += this.vx;
+          return this.y += this.vy;
+        }
+      });
+    };
+    BASE_THRUST = 0.025;
+    BASE_SHIELDS = 3;
+    BASE_WCHARGE_RATE = 0.05;
+    BASE_WCHARGE_CAP = 2;
+    BASE_WSPEED = 2;
+    BASE_WPOWER = 1;
+    BASE_WSPAN = 80;
+    TURN_SPEED = 0.1;
+    player = void 0;
+    Player = (function() {
+
+      function Player(name) {
+        this.available_cabins = 3;
+        this.wcharge_cap = BASE_WCHARGE_CAP;
+        this.wcharge_rate = BASE_WCHARGE_RATE;
+        this.wcharge = this.wcharge_cap;
+        this.wspeed = BASE_WSPEED;
+        this.wpower = BASE_WPOWER;
+        this.wspan = BASE_WSPAN;
+        this.thrust = BASE_THRUST;
+        this.afterburn = 0.025;
+        this.shields = BASE_SHIELDS;
+        this.cargo = {
+          fuel: 4
+        };
+        this.init();
+      }
+
+      Player.prototype.fuel = function() {
+        return this.cargo.fuel;
       };
-      togglePause = function() {
-        return paused = !paused;
+
+      Player.prototype.id = 'player_id';
+
+      Player.prototype.group = 'player';
+
+      Player.prototype.x = 0;
+
+      Player.prototype.y = 0;
+
+      Player.prototype.vx = 0;
+
+      Player.prototype.vy = 0;
+
+      Player.prototype.init = function() {
+        this.skip = false;
+        this.frame = 0;
+        this.tileset = 'ship0_tiles';
+        this.w = 8;
+        this.h = 8;
+        this.x = gbox.getScreenW() / 2 - this.w / 2;
+        this.y = gbox.getScreenH() / 2 - this.h / 2;
+        this.vx = 0;
+        this.vy = 0;
+        this.ang = 0;
+        this.ax = 0;
+        this.ay = 0;
+        return this.particle_tick = 0;
       };
-      Menu = (function() {
 
-        function Menu() {
-          this.selected = 0;
-          this.items = [];
+      Player.prototype.first = function() {
+        var going,
+          _this = this;
+        if (this.skip) {
+          this.skip = false;
+          return;
         }
-
-        Menu.prototype.up = function() {
-          var _results;
-          this.selected = (this.selected - 1) % this.items.length;
-          if (this.selected < 0) this.selected = this.items.length - 1;
-          _results = [];
-          while (!this.items[this.selected].enabled) {
-            _results.push(this.selected = (this.selected - 1) % this.items.length);
-          }
-          return _results;
-        };
-
-        Menu.prototype.down = function() {
-          var _results;
-          this.selected = (this.selected + 1) % this.items.length;
-          _results = [];
-          while (!this.items[this.selected].enabled) {
-            _results.push(this.selected = (this.selected + 1) % this.items.length);
-          }
-          return _results;
-        };
-
-        Menu.prototype.select = function() {
-          console.log(this.items[this.selected].name);
-          return this.items[this.selected].select();
-        };
-
-        return Menu;
-
-      })();
-      starmapMenu = new Menu;
-      starmapMenu.items = [
-        {
-          name: 'RETURN TO BRIDGE',
-          enabled: true,
-          select: function() {
-            var g, groups, _i, _len;
-            togglePause();
-            window.currentMenu = rootMenu;
-            menuVisible = false;
-            groups = ['planet', 'player', 'baddies', 'drones', 'friend_shots', 'foe_shots'];
-            for (_i = 0, _len = groups.length; _i < _len; _i++) {
-              g = groups[_i];
-              gbox.stopGroup(g);
-              gbox.toggleGroup(g);
-            }
-            return gbox.stopGroup('starmap');
+        going = false;
+        if (gbox.keyIsPressed('up')) {
+          going = true;
+          this.vx += this.ax;
+          this.vy += this.ay;
+        } else if (gbox.keyIsPressed('down') || gbox.keyIsPressed('b')) {
+          this.vx *= 1 - this.afterburn;
+          this.vy *= 1 - this.afterburn;
+        }
+        if (gbox.keyIsPressed('right')) {
+          this.ang += TURN_SPEED;
+          this.ax = Math.cos(this.ang) * this.thrust;
+          this.ay = Math.sin(this.ang) * this.thrust;
+        } else if (gbox.keyIsPressed('left')) {
+          this.ang -= TURN_SPEED;
+          this.ax = Math.cos(this.ang) * this.thrust;
+          this.ay = Math.sin(this.ang) * this.thrust;
+        }
+        if (this.ang < 0) this.ang = Math.PI * 2 - this.ang;
+        this.x += this.vx;
+        this.y += this.vy;
+        this.frame = Math.round(((this.ang + (Math.PI / 2)) / (Math.PI * 2)) * 16) % 16;
+        if (going) {
+          this.frame += 16;
+          if (++this.particle_tick % 4 === 0) {
+            addParticle('fire', this.x + this.w / 2, this.y + this.h / 2, this.vx - this.ax * 40 * frand(0.5, 1), this.vy - this.ay * 40 * frand(0.5, 1));
           }
         }
-      ];
-      rootMenu = new Menu;
-      rootMenu.items = [
-        {
-          name: 'DROP PROBE',
-          enabled: true,
-          select: function() {
-            menuVisible = false;
-            return togglePause();
-          }
-        }, {
-          name: 'STARMAP',
-          enabled: true,
-          select: function() {
-            var g, groups, _i, _len;
-            menuVisible = false;
-            groups = ['planet', 'player', 'baddies', 'drones', 'friend_shots', 'foe_shots'];
-            for (_i = 0, _len = groups.length; _i < _len; _i++) {
-              g = groups[_i];
-              gbox.stopGroup(g);
-            }
-            gbox.stopGroup('starmap');
-            gbox.toggleGroup('starmap');
-            window.currentMenu = starmapMenu;
-            return togglePause();
-          }
-        }, {
-          name: 'FLEE',
-          enabled: true,
-          select: function() {
-            menuVisible = false;
-            return togglePause();
-          }
+        if (gbox.keyIsHit('a') && (this.wcharge >= this.wpower)) {
+          this.wcharge -= this.wpower;
+          addShot(this.x + this.w / 2, this.y + this.h / 2, this.x + this.w / 2 + (this.ax / this.thrust) * 20000, this.y + this.h / 2 + (this.ay / this.thrust) * 20000, this.wpower, this.wspeed, 4, 'friend_shots', this.wspan, this.vx, this.vy);
         }
-      ];
-      window.currentMenu = rootMenu;
-      addPauseScreen = function() {
-        return gbox.addObject({
-          x: 0,
-          y: 0,
-          vx: 0,
-          vy: 0,
-          group: 'pause',
-          first: function() {
-            if (gbox.keyIsHit('c')) {
-              menuVisible = !menuVisible;
-              togglePause();
-            }
-            if (!menuVisible) return;
-            if (gbox.keyIsHit('a')) {
-              currentMenu.select();
-              return;
-            }
-            if (gbox.keyIsHit('up')) {
-              return currentMenu.up();
-            } else if (gbox.keyIsHit('down')) {
-              return currentMenu.down();
-            }
-          },
-          blit: function() {
-            var alpha, height, item, num, top, _i, _len, _ref, _results;
-            if (!menuVisible) return;
-            gbox.blitFade(gbox.getBufferContext(), {
-              alpha: 0.5
-            });
-            height = 9 * currentMenu.items.length;
-            top = H / 2 - height / 2;
-            top -= 9;
-            num = 0;
-            _ref = currentMenu.items;
-            _results = [];
-            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-              item = _ref[_i];
-              top += 9;
-              if (item.enabled) {
-                if (currentMenu.selected === num) {
-                  alpha = 1;
-                } else {
-                  alpha = 0.5;
-                }
-              } else {
-                alpha = 0.25;
-              }
-              ++num;
-              _results.push(gbox.blitText(gbox.getBufferContext(), {
-                font: 'small',
-                text: item.name,
-                dx: 0,
-                dy: top,
-                dw: W,
-                dh: 16,
-                halign: gbox.ALIGN_CENTER,
-                valign: gbox.ALIGN_TOP,
-                alpha: alpha
-              }));
-            }
-            return _results;
+        if (this.wcharge < this.wcharge_cap) this.wcharge += this.wcharge_rate;
+        groupCollides(this, 'foe_shots', function(shot) {
+          var i;
+          i = 0;
+          while (i < 3) {
+            addParticle('fire', _this.x + _this.w / 2, _this.y + _this.h / 2, _this.vx + frand(-.5, .5), _this.vy + frand(-.5, .5));
+            ++i;
           }
+          _this.shields -= shot.power;
+          return shot.die();
+        });
+        if (!going) {
+          if (Math.abs(this.vx) < 0.2) this.vx = 0;
+          if (Math.abs(this.vy) < 0.2) this.vy = 0;
+        }
+        if (gbox.keyIsHit('c')) return planetmapMode();
+      };
+
+      Player.prototype.blit = function() {
+        return gbox.blitTile(gbox.getBufferContext(), {
+          tileset: this.tileset,
+          tile: this.frame,
+          dx: Math.round(this.x - cam.x),
+          dy: Math.round(this.y - cam.y)
         });
       };
-      addCamera = function() {
-        return gbox.addObject({
-          id: 'cam_id',
-          x: 0,
-          y: 0,
-          vx: 0,
-          vy: 0,
-          group: 'game',
-          init: function() {
-            this.x = 100;
-            this.y = 100;
-            this.vx = 0;
-            return this.vy = 0;
-          },
-          first: function() {
-            if (paused) return;
-            this.vx = (player.x + player.vx * 60 - (this.x + 160)) * 0.05;
-            this.vy = (player.y + player.vy * 60 - (this.y + 160)) * 0.05;
-            this.x += this.vx;
-            return this.y += this.vy;
-          }
-        });
-      };
-      addPlayer = function() {
-        return gbox.addObject({
-          id: 'player_id',
-          group: 'player',
-          x: 0,
-          y: 0,
-          vx: 0,
-          vy: 0,
-          init: function() {
-            this.frame = 0;
-            this.tileset = 'ship0_tiles';
-            this.w = 8;
-            this.h = 8;
-            this.x = gbox.getScreenW() / 2 - this.w / 2;
-            this.y = gbox.getScreenH() / 2 - this.h / 2;
-            this.vx = 0;
-            this.vy = 0;
-            this.ang = 0;
-            this.ax = 0;
-            this.ay = 0;
-            this.wcharge_cap = 100;
-            this.wcharge = this.wcharge_cap;
-            this.wspeed = 2;
-            this.wpower = 1;
-            this.wcost = 50;
-            this.wspan = 80;
-            this.thrust = 0.01;
-            this.afterburn = 0.01;
-            return this.shields = 5;
-          },
-          first: function() {
-            var going,
-              _this = this;
-            if (paused) return;
-            going = false;
-            if (gbox.keyIsPressed('up')) {
-              going = true;
-              this.vx += this.ax;
-              this.vy += this.ay;
-            } else if (gbox.keyIsPressed('down')) {
-              this.vx *= 1 - this.afterburn;
-              this.vy *= 1 - this.afterburn;
-            }
-            if (gbox.keyIsPressed('right')) {
-              this.ang += TURN_SPEED;
-              this.ax = Math.cos(this.ang) * this.thrust;
-              this.ay = Math.sin(this.ang) * this.thrust;
-            } else if (gbox.keyIsPressed('left')) {
-              this.ang -= TURN_SPEED;
-              this.ax = Math.cos(this.ang) * this.thrust;
-              this.ay = Math.sin(this.ang) * this.thrust;
-            }
-            if (this.ang < 0) this.ang = Math.PI * 2 - this.ang;
-            this.x += this.vx;
-            this.y += this.vy;
-            this.frame = Math.round(((this.ang + (Math.PI / 2)) / (Math.PI * 2)) * 16) % 16;
-            if (going) this.frame += 16;
-            if (gbox.keyIsHit('a') && (this.wcharge >= this.wcost)) {
+
+      return Player;
+
+    })();
+    addBaddie = function(planet, profile) {
+      return gbox.addObject({
+        group: 'baddies',
+        init: function() {
+          this.num = 0;
+          this.frame = 0;
+          this.image = gbox.getImage('bad' + this.num);
+          this.w = 8;
+          this.h = 8;
+          this.x = Math.random() * gbox.getScreenW();
+          this.y = Math.random() * gbox.getScreenH();
+          this.vx = 0;
+          this.vy = 0;
+          this.wcharge_cap = 50;
+          this.wcharge = this.wcharge_cap;
+          this.wspeed = 1;
+          this.wpower = 1;
+          this.wcost = 50;
+          this.wspan = 80;
+          this.tx = this.x;
+          this.ty = this.y;
+          this.tsx = 0;
+          this.tsy = 0;
+          this.attack_dist = 90;
+          this.orbit_radius = 60;
+          this.hostile = true;
+          this.ang = 0;
+          this.thrust = 0.006;
+          this.afterburn = 0.005;
+          this.shields = 3;
+          this.cargo_cap = 10;
+          return this.cargo = {};
+        },
+        first: function() {
+          var ax, ay, d, dx, dy, len, xoff, yoff,
+            _this = this;
+          if (this.hostile) {
+            dx = player.x - this.x;
+            dy = player.y - this.y;
+            d = Math.sqrt(dx * dx + dy * dy);
+            if (this.wcharge >= this.wcost && d < this.attack_dist) {
+              this.tsx = player.x + player.vx + this.vx;
+              this.tsy = player.y + player.vy + this.vy;
               this.wcharge -= this.wcost;
-              addShot(this.x + this.w / 2, this.y + this.h / 2, this.x + this.w / 2 + (this.ax / this.thrust) * 20000, this.y + this.h / 2 + (this.ay / this.thrust) * 20000, this.wpower, this.wspeed, 4, 'friend_shots', this.wspan, this.vx, this.vy);
+              addShot(this.x + this.w / 2, this.y + this.h / 2, this.tsx, this.tsy, this.wpower, this.wspeed, 1, 'foe_shots', this.wspan, this.vx, this.vy);
             }
-            if (this.wcharge < this.wcharge_cap) this.wcharge += 1;
-            return groupCollides(this, 'foe_shots', function(shot) {
-              _this.shields -= shot.power;
-              return shot.die();
-            });
-          },
-          initialize: function() {
-            return this.init();
-          },
-          blit: function() {
-            return gbox.blitTile(gbox.getBufferContext(), {
-              tileset: this.tileset,
-              tile: this.frame,
-              dx: Math.round(this.x - cam.x),
-              dy: Math.round(this.y - cam.y)
-            });
-          }
-        });
-      };
-      addBaddie = function() {
-        return gbox.addObject({
-          group: 'baddies',
-          init: function() {
-            this.num = 0;
-            this.frame = 0;
-            this.image = gbox.getImage('bad' + this.num);
-            this.w = 8;
-            this.h = 8;
-            this.x = Math.random() * gbox.getScreenW();
-            this.y = Math.random() * gbox.getScreenH();
-            this.vx = 0;
-            this.vy = 0;
-            this.wcharge_cap = 50;
-            this.wcharge = this.wcharge_cap;
-            this.wspeed = 1;
-            this.wpower = 1;
-            this.wcost = 50;
-            this.wspan = 80;
-            this.tx = this.x;
-            this.ty = this.y;
-            this.tsx = 0;
-            this.tsy = 0;
-            this.attack_dist = 90;
-            this.orbit_radius = 60;
-            this.hostile = true;
-            this.ang = 0;
-            this.thrust = 0.006;
-            this.afterburn = 0.005;
-            return this.shields = 3;
-          },
-          first: function() {
-            var ax, ay, d, dx, dy, len, xoff, yoff,
-              _this = this;
-            if (paused) return;
-            if (this.hostile) {
-              dx = player.x - this.x;
-              dy = player.y - this.y;
-              d = Math.sqrt(dx * dx + dy * dy);
-              if (this.wcharge >= this.wcost && d < this.attack_dist) {
-                this.tsx = player.x + player.vx + this.vx;
-                this.tsy = player.y + player.vy + this.vy;
-                this.wcharge -= this.wcost;
-                addShot(this.x + this.w / 2, this.y + this.h / 2, this.tsx, this.tsy, this.wpower, this.wspeed, 1, 'foe_shots', this.wspan, this.vx, this.vy);
-              }
-              this.ang += 0.005;
-              xoff = Math.cos(this.ang);
-              yoff = Math.sin(this.ang);
-              this.tx = player.x + xoff * this.orbit_radius;
-              this.ty = player.y + xoff * this.orbit_radius;
-            } else {
-              if (Math.random() < 0.01) {
-                this.tx = gbox.getScreenW() * Math.random();
-                this.ty = gbox.getScreenH() * Math.random();
-              }
+            this.ang += 0.005;
+            xoff = Math.cos(this.ang);
+            yoff = Math.sin(this.ang);
+            this.tx = player.x + xoff * this.orbit_radius;
+            this.ty = player.y + xoff * this.orbit_radius;
+          } else {
+            if (Math.random() < 0.01) {
+              this.tx = gbox.getScreenW() * Math.random();
+              this.ty = gbox.getScreenH() * Math.random();
             }
-            ax = this.tx - this.x;
-            ay = this.ty - this.y;
-            len = Math.sqrt(ax * ax + ay * ay);
-            ax /= len;
-            ay /= len;
-            ax *= this.thrust;
-            ay *= this.thrust;
-            this.vx += ax;
-            this.vy += ay;
-            this.x += this.vx;
-            this.y += this.vy;
-            this.vx *= 1 - this.afterburn;
-            this.vy *= 1 - this.afterburn;
-            if (this.wcharge < this.wcharge_cap) this.wcharge += 1;
-            return groupCollides(this, 'friend_shots', function(shot) {
-              _this.shields -= shot.power;
-              if (_this.shields < 0) _this.die();
-              return shot.die();
-            });
-          },
-          initialize: function() {
-            return this.init();
-          },
-          die: function() {
-            return gbox.trashObject(this);
-          },
-          blit: function() {
-            return gbox.blitAll(gbox.getBufferContext(), this.image, {
-              dx: Math.round(this.x - cam.x),
-              dy: Math.round(this.y - cam.y)
-            });
           }
-        });
-      };
-      addDrone = function() {
-        return gbox.addObject({
-          group: 'drones',
-          init: function() {
-            this.deployed = false;
-            this.frame = 0;
-            this.tileset = 'drones_tiles';
-            this.w = 5;
-            this.h = 5;
-            this.x = player.x + player.h / 2 - this.w / 2;
-            this.y = player.y + player.h / 2 - this.h / 2;
-            this.vx = 0;
-            this.vy = 0;
-            this.ang = Math.random() * Math.PI * 2;
-            this.xoff = Math.cos(this.ang);
-            this.yoff = Math.sin(this.ang);
-            return this.dist = 20;
-          },
-          first: function() {
-            var p, tx, ty;
-            if (paused) return;
-            this.ang += 0.02;
-            this.xoff = Math.cos(this.ang);
-            this.yoff = Math.sin(this.ang);
-            p = player;
-            tx = p.x + 4 + this.dist * this.xoff || 0;
-            ty = p.y + 4 + this.dist * this.yoff || 0;
-            this.x += (tx - this.x) * 0.025;
-            return this.y += (ty - this.y) * 0.025;
-          },
-          initialize: function() {
-            return this.init();
-          },
-          blit: function() {
-            return gbox.blitTile(gbox.getBufferContext(), {
-              tileset: this.tileset,
-              tile: this.frame,
-              dx: Math.round(this.x - cam.x),
-              dy: Math.round(this.y - cam.y)
-            });
-          }
-        });
-      };
-      addShot = function(x, y, tx, ty, power, speed, frame, group, lifespan, vx, vy) {
-        return gbox.addObject({
-          group: group,
-          w: 0.1,
-          h: 0.1,
-          init: function() {
-            var len;
-            this.frame = frame;
-            this.tileset = 'shots_tiles';
-            this.w = 3;
-            this.h = 3;
-            this.x = x - this.w / 2;
-            this.y = y - this.h / 2;
-            this.vx = tx - this.x;
-            this.vy = ty - this.y;
-            len = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-            this.vx /= len;
-            this.vy /= len;
-            this.vx *= speed;
-            this.vy *= speed;
-            if (vx && vy) {
-              this.vx += vx;
-              this.vy += vy;
-            }
-            this.lifespan = lifespan || 99999;
-            this.tick = 0;
-            return this.power = power;
-          },
-          die: function() {
-            return gbox.trashObject(this);
-          },
-          first: function() {
-            if (paused) return;
-            this.x += this.vx;
-            this.y += this.vy;
-            ++this.tick;
-            if (this.tick > this.lifespan) return this.die();
-          },
-          initialize: function() {
-            return this.init();
-          },
-          blit: function() {
-            return gbox.blitTile(gbox.getBufferContext(), {
-              tileset: this.tileset,
-              tile: this.frame,
-              dx: Math.round(this.x - cam.x),
-              dy: Math.round(this.y - cam.y)
-            });
-          }
-        });
-      };
-      GRID_W = 40;
-      GRID_H = 40;
-      OFF_RADIUS = 4;
-      MIN_STAR_RAD = 900;
-      MAX_STAR_RAD = 40000;
-      addStarmap = function(x, y, density) {
-        Math.seedrandom(BASE_SEED + x + ',' + y);
-        return gbox.addObject({
-          group: 'starmap',
-          closest: function(x, y) {
-            var d2, dx, dy, minD2, ret, star, _i, _len, _ref;
-            minD2 = 999999;
-            ret = void 0;
-            _ref = this.stars;
-            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-              star = _ref[_i];
-              dx = x - star.x;
-              dy = y - star.y;
-              d2 = dx * dx + dy * dy;
-              if (d2 < minD2) {
-                minD2 = d2;
-                ret = star;
-              }
-            }
-            return ret;
-          },
-          init: function() {
-            var c, color, i, j, off_ang, off_mag, xoff, yoff;
-            gbox.stopGroup('starmap');
-            this.stars = [];
-            c = document.getElementById('starmap').getContext('2d');
-            this.starmap = c.createImageData(W, H);
+          ax = this.tx - this.x;
+          ay = this.ty - this.y;
+          len = Math.sqrt(ax * ax + ay * ay);
+          ax /= len;
+          ay /= len;
+          ax *= this.thrust;
+          ay *= this.thrust;
+          this.vx += ax;
+          this.vy += ay;
+          this.x += this.vx;
+          this.y += this.vy;
+          this.vx *= 1 - this.afterburn;
+          this.vy *= 1 - this.afterburn;
+          if (this.wcharge < this.wcharge_cap) this.wcharge += 1;
+          return groupCollides(this, 'friend_shots', function(shot) {
+            var i;
+            _this.shields -= shot.power;
             i = 0;
-            while (i < GRID_W) {
-              this.stars[i] = [];
-              j = 0;
-              while (j < GRID_H) {
-                off_ang = Math.PI * 2 * Math.random();
-                off_mag = Math.random() * OFF_RADIUS;
-                if (Math.random() < density) {
-                  color = choose(starcolors);
-                  xoff = Math.cos(off_ang) * off_mag;
-                  yoff = Math.sin(off_ang) * off_mag;
-                  x = i * 2 * OFF_RADIUS + xoff;
-                  y = j * 2 * OFF_RADIUS + yoff;
-                  x = clamp(x, 0, W);
-                  y = clamp(y, 0, H);
-                  this.stars[i].push({
-                    radius: frand(MIN_STAR_RAD, MAX_STAR_RAD),
-                    xoff: xoff,
-                    yoff: yoff,
-                    x: x,
-                    y: y,
-                    color: color
-                  });
-                  setPixel(this.starmap, Math.round(x), Math.round(y), color[0], color[1], color[2], color[3]);
-                }
-                ++j;
-              }
+            while (i < 3) {
+              addParticle('fire', _this.x + _this.w / 2, _this.y + _this.h / 2, _this.vx + frand(-0.5, 0.5), _this.vy + frand(-.5, .5));
               ++i;
             }
-            return c.putImageData(this.starmap, 0, 0);
-          },
-          first: function() {
-            if (paused) {}
-          },
-          initialize: function() {
-            return this.init();
-          },
-          blit: function() {
-            var c;
-            c = gbox.getBufferContext();
-            if (c) return c.putImageData(this.starmap, 0, 0);
-          }
-        });
-      };
-      addPlanetMap = function(star) {
-        return gbox.addObject({
-          group: 'starmap',
-          init: function() {},
-          first: function() {},
-          initialize: function() {
-            return this.init();
-          },
-          blit: function() {
-            var c;
-            c = gbox.getBufferContext();
-            if (c) return c.putImageData(this.map, 0, 0);
-          }
-        });
-      };
-      addPlanet = function(radius) {
-        return gbox.addObject({
-          group: 'planet',
-          radius: radius || 50,
-          init: function() {
-            this.tileset = 'drones_tiles';
-            this.w = 100;
-            this.h = 100;
-            this.x = gbox.getScreenW() / 2 - this.w / 2;
-            this.y = gbox.getScreenH() / 2 - this.h / 2;
-            this.ang = 0;
-            this.xoff = 0;
-            this.yoff = 0;
-            this.dist = 3;
-            this.dirx = frand(-this.radius, this.radius);
-            return this.diry = frand(-this.radius * .1, this.radius * .1);
-          },
-          first: function() {
-            if (paused) return;
-            this.ang += 0.02;
-            return this.yoff = 3 * Math.sin(this.ang);
-          },
-          initialize: function() {
-            return this.init();
-          },
-          blit: function() {
-            var ctx, grd, x, y;
-            ctx = gbox.getBufferContext();
-            if (!ctx) return;
-            x = Math.round(this.x + this.xoff - cam.x);
-            y = Math.round(this.y + this.yoff - cam.y);
-            ctx.beginPath();
-            grd = ctx.createRadialGradient(x + this.dirx, y + this.diry, 0, x + this.dirx, y + this.diry, this.radius * 1.4);
-            grd.addColorStop(0, '#224455');
-            grd.addColorStop(1, '#000510');
-            ctx.fillStyle = grd;
-            ctx.arc(x, y, this.radius, 0, 2 * Math.PI, false);
-            ctx.fill();
-            return ctx.closePath();
-            /*
-                        gbox.blitAll gbox.getBufferContext(), gbox.getImage('planet0'),
-                          dx: Math.round(@x + @xoff - cam.x)
-                          dy: Math.round(@y + @yoff - cam.y)
-            */
-          }
-        });
-      };
-      main = function() {
-        gbox.setGroups(['background', 'game', 'starmap', 'planet', 'player', 'friend_shots', 'baddies', 'drones', 'foe_shots', 'pause']);
-        maingame = gamecycle.createMaingame('game', 'game');
-        maingame.gameMenu = function() {
-          return true;
-        };
-        maingame.gameIntroAnimation = function() {
-          return true;
-        };
-        maingame.gameTitleIntroAnimation = function() {
-          gbox.blitFade(gbox.getBufferContext(), {
-            alpha: 1
-          });
-          gbox.blitAll(gbox.getBufferContext(), gbox.getImage('logo'), {
-            dx: 1,
-            dy: 1
-          });
-          return gbox.keyIsHit('a');
-        };
-        maingame.pressStartIntroAnimation = function(reset) {
-          return gbox.keyIsHit('a');
-        };
-        maingame.initializeGame = function() {
-          player = addPlayer();
-          cam = addCamera();
-          addDrone();
-          addDrone();
-          addPlanet();
-          addBaddie();
-          addPauseScreen();
-          addStarmap(5, 34, 0.2);
-          return gbox.addObject({
-            id: 'bg_id',
-            group: 'background',
-            color: 'rgb(0,0,0)',
-            blit: function() {
-              gbox.blitFade(gbox.getBufferContext(), {
-                color: '#000510',
-                alpha: 1
-              });
-              gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
-                dx: -cam.x % W,
-                dy: -cam.y % H
-              });
-              gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
-                dx: -cam.x % W - W,
-                dy: -cam.y % H - H
-              });
-              gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
-                dx: -cam.x % W,
-                dy: -cam.y % H - H
-              });
-              gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
-                dx: -cam.x % W + W,
-                dy: -cam.y % H - H
-              });
-              gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
-                dx: -cam.x % W + W,
-                dy: -cam.y % H
-              });
-              gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
-                dx: -cam.x % W + W,
-                dy: -cam.y % H + H
-              });
-              gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
-                dx: -cam.x % W,
-                dy: -cam.y % H + H
-              });
-              gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
-                dx: -cam.x % W - W,
-                dy: -cam.y % H + H
-              });
-              return gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
-                dx: -cam.x % W - W,
-                dy: -cam.y % H
-              });
+            addParticle('wreckage', _this.x + _this.w / 2, _this.y + _this.h / 2, _this.vx + frand(-0.5, 0.5), _this.vy + frand(-.5, .5));
+            if (_this.shields < 0) {
+              _this.die();
+              i = 0;
+              while (i < 20) {
+                addParticle('fire', _this.x + _this.w / 2, _this.y + _this.h / 2, _this.vx + frand(-1, 1), _this.vy + frand(-1, 1));
+                ++i;
+              }
+              i = 0;
+              while (i < 12) {
+                addParticle('wreckage', _this.x + _this.w / 2, _this.y + _this.h / 2, _this.vx + frand(-0.5, 0.5), _this.vy + frand(-.5, .5));
+                ++i;
+              }
             }
+            return shot.die();
           });
-        };
-        gbox.go();
-        return gbox.stopGroup('starmap');
-      };
-      return window.addEventListener('load', loadResources, false);
+        },
+        initialize: function() {
+          return this.init();
+        },
+        die: function() {
+          return gbox.trashObject(this);
+        },
+        blit: function() {
+          return gbox.blitAll(gbox.getBufferContext(), this.image, {
+            dx: Math.round(this.x - cam.x),
+            dy: Math.round(this.y - cam.y)
+          });
+        }
+      });
     };
-    return starcolors_el.src = 'star_color_distr.png';
+    addDrone = function() {
+      return gbox.addObject({
+        group: 'drones',
+        init: function() {
+          this.deployed = false;
+          this.frame = 0;
+          this.tileset = 'drones_tiles';
+          this.w = 5;
+          this.h = 5;
+          this.x = player.x + player.h / 2 - this.w / 2;
+          this.y = player.y + player.h / 2 - this.h / 2;
+          this.vx = 0;
+          this.vy = 0;
+          this.ang = Math.random() * Math.PI * 2;
+          this.xoff = Math.cos(this.ang);
+          this.yoff = Math.sin(this.ang);
+          return this.dist = 20;
+        },
+        first: function() {
+          var p, tx, ty;
+          this.ang += 0.02;
+          this.xoff = Math.cos(this.ang);
+          this.yoff = Math.sin(this.ang);
+          p = player;
+          tx = p.x + 4 + this.dist * this.xoff || 0;
+          ty = p.y + 4 + this.dist * this.yoff || 0;
+          this.x += (tx - this.x) * 0.025;
+          return this.y += (ty - this.y) * 0.025;
+        },
+        initialize: function() {
+          return this.init();
+        },
+        blit: function() {
+          return gbox.blitTile(gbox.getBufferContext(), {
+            tileset: this.tileset,
+            tile: this.frame,
+            dx: Math.round(this.x - cam.x),
+            dy: Math.round(this.y - cam.y)
+          });
+        }
+      });
+    };
+    addShot = function(x, y, tx, ty, power, speed, frame, group, lifespan, vx, vy) {
+      return gbox.addObject({
+        group: group,
+        w: 0.1,
+        h: 0.1,
+        init: function() {
+          var len;
+          this.frame = frame;
+          this.tileset = 'shots_tiles';
+          this.w = 3;
+          this.h = 3;
+          this.x = x - this.w / 2;
+          this.y = y - this.h / 2;
+          this.vx = tx - this.x;
+          this.vy = ty - this.y;
+          len = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+          this.vx /= len;
+          this.vy /= len;
+          this.vx *= speed;
+          this.vy *= speed;
+          if (vx && vy) {
+            this.vx += vx;
+            this.vy += vy;
+          }
+          this.lifespan = lifespan || 99999;
+          this.tick = 0;
+          return this.power = power;
+        },
+        die: function() {
+          return gbox.trashObject(this);
+        },
+        first: function() {
+          this.x += this.vx;
+          this.y += this.vy;
+          ++this.tick;
+          if (this.tick > this.lifespan) return this.die();
+        },
+        initialize: function() {
+          return this.init();
+        },
+        blit: function() {
+          return gbox.blitTile(gbox.getBufferContext(), {
+            tileset: this.tileset,
+            tile: this.frame,
+            dx: Math.round(this.x - cam.x),
+            dy: Math.round(this.y - cam.y)
+          });
+        }
+      });
+    };
+    MIN_STAR_COUNT = 800;
+    MAX_STAR_COUNT = 1100;
+    MIN_STAR_RAD = 900;
+    MAX_STAR_RAD = 40000;
+    MAX_STAR_PLANETS = 15;
+    Star = (function() {
+
+      function Star(sector, x, y, color, itg, piracy) {
+        this.sector = sector;
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.pcount = rand(1, MAX_STAR_PLANETS);
+        this.itg = itg;
+        this.pirate = piracy;
+      }
+
+      Star.prototype.generate_planets = function() {
+        var p, _results;
+        Math.seedrandom(BASE_SEED + '.' + this.sector.x + '.' + this.sector.y + '.' + this.x + '.' + this.y);
+        this.radius = frand(MIN_STAR_RAD, MAX_STAR_RAD);
+        this.planets = [];
+        p = 0;
+        _results = [];
+        while (p < this.pcount) {
+          this.planets.push(new Planet(this, p, false));
+          _results.push(++p);
+        }
+        return _results;
+      };
+
+      Star.prototype.planet_count = function() {
+        var count, planet, _i, _len, _ref;
+        if (this.planets === void 0) return;
+        count = 0;
+        _ref = this.planets;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          planet = _ref[_i];
+          count += planet.count();
+        }
+        return count;
+      };
+
+      return Star;
+
+    })();
+    MAX_ITG_REGIONS = 3;
+    MIN_ITG_REGION_RADIUS = 10;
+    MAX_ITG_REGION_RADIUS = 50;
+    MAX_PIRATE_REGIONS = 3;
+    MIN_PIRATE_REGION_RADIUS = 10;
+    MAX_PIRATE_REGION_RADIUS = 50;
+    LY_SCALE = 0.25;
+    starmap = void 0;
+    Starmap = (function() {
+
+      function Starmap(x, y, density) {
+        var c, color, count, el, i, radius, star, starcount;
+        this.skip = false;
+        this.sector = {
+          x: x,
+          y: y
+        };
+        this.cursor = {
+          x: 0,
+          y: 0
+        };
+        Math.seedrandom(BASE_SEED + x + ',' + y);
+        this.itg_regions = [];
+        i = 0;
+        count = rand(0, MAX_ITG_REGIONS);
+        while (i < count) {
+          radius = frand(MIN_ITG_REGION_RADIUS, MAX_ITG_REGION_RADIUS);
+          this.itg_regions.push({
+            x: rand(radius, W - radius),
+            y: rand(radius, H - radius - 16),
+            radius: radius
+          });
+          ++i;
+        }
+        this.pirate_regions = [];
+        i = 0;
+        count = rand(0, MAX_PIRATE_REGIONS);
+        while (i < count) {
+          radius = frand(MIN_PIRATE_REGION_RADIUS, MAX_PIRATE_REGION_RADIUS);
+          this.itg_regions.push({
+            x: rand(radius, W - radius),
+            y: rand(radius, H - radius - 16),
+            radius: radius
+          });
+          ++i;
+        }
+        this.stars = [];
+        el = document.getElementById('starmap');
+        c = document.getElementById('starmap').getContext('2d');
+        c.drawImage(gbox.getImage('starmap_gui'), 0, 0);
+        this.starmap = c.getImageData(0, 0, W, H);
+        i = 0;
+        starcount = MAX_STAR_COUNT * density;
+        while (i < starcount) {
+          color = choose(starcolors);
+          x = frand(1, W - 1);
+          y = frand(1, H - 16 - 1);
+          star = new Star(this.sector, x, y, color, this.itg_factor(x, y), this.pirate_factor(x, y));
+          star.sid = i;
+          this.stars.push(star);
+          setPixel(this.starmap, Math.round(x), Math.round(y), color[0], color[1], color[2], color[3]);
+          ++i;
+        }
+        c.putImageData(this.starmap, 0, 0);
+      }
+
+      Starmap.prototype._factor = function(x, y, pirate) {
+        var d, dx, dy, fac, region, regions, _i, _len;
+        regions = void 0;
+        if (pirate) {
+          regions = this.pirate_regions;
+        } else {
+          regions = this.itg_regions;
+        }
+        fac = 0.0001;
+        for (_i = 0, _len = regions.length; _i < _len; _i++) {
+          region = regions[_i];
+          dx = region.x - x;
+          dy = region.y - y;
+          d = Math.sqrt(dx * dx + dy * dy);
+          fac += 1 / (d / region.radius);
+        }
+        return fac;
+      };
+
+      Starmap.prototype.pirate_factor = function(x, y) {
+        return this._factor(x, y, true);
+      };
+
+      Starmap.prototype.itg_factor = function(x, y) {
+        return this._factor(x, y);
+      };
+
+      Starmap.prototype.first = function() {
+        var dx, dy, x, y;
+        if (this.skip) {
+          this.skip = false;
+          return;
+        }
+        y = this.cursor.y;
+        x = this.cursor.x;
+        if (gbox.keyIsPressed('up')) {
+          this.cursor.y -= 0.5;
+        } else if (gbox.keyIsPressed('down')) {
+          this.cursor.y += 0.5;
+        }
+        if (gbox.keyIsPressed('left')) {
+          this.cursor.x -= 0.5;
+        } else if (gbox.keyIsPressed('right')) {
+          this.cursor.x += 0.5;
+        }
+        if (this.closest_star && gbox.keyIsHit('a')) {
+          gbox.clearGroup('planetmap');
+          this.closest_star.generate_planets();
+          window.planetmap = new Planetmap(this.closest_star);
+          window.planetmap.skip = true;
+          gbox.addObject(planetmap);
+          planetmapMode();
+          return;
+        }
+        if (current_planet && gbox.keyIsHit('c')) flightMode();
+        if (!this.closest_star || this.cursor.x !== x || this.cursor.y !== y) {
+          this.closest_star = this.closest(this.cursor.x, this.cursor.y);
+          dx = this.current_star.x - this.closest_star.x;
+          dy = this.current_star.y - this.closest_star.y;
+          return this.closest_star.dist = Math.sqrt(dx * dx + dy * dy) * LY_SCALE;
+        }
+      };
+
+      Starmap.prototype.blit = function() {
+        var c, r, _i, _j, _len, _len2, _ref, _ref2;
+        c = gbox.getBufferContext();
+        if (c) {
+          c.putImageData(this.starmap, 0, 0);
+          _ref = this.itg_regions;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            r = _ref[_i];
+            circle(c, 'blue', Math.round(r.x), Math.round(r.y), r.radius);
+          }
+          _ref2 = this.pirate_regions;
+          for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+            r = _ref2[_j];
+            circle(c, 'red', Math.round(r.x), Math.round(r.y), r.radius);
+          }
+          if (this.current_star) {
+            gbox.blitText(c, {
+              font: 'small',
+              text: "LY: " + (Math.round(this.closest_star.dist * 100) / 100),
+              dx: 1,
+              dy: H - 12,
+              dw: 64,
+              dh: 16
+            });
+            gbox.blitTile(c, {
+              tileset: 'cursors',
+              tile: 0,
+              dx: Math.round(this.current_star.x) - 4,
+              dy: Math.round(this.current_star.y) - 4
+            });
+            gbox.blitTile(c, {
+              tileset: 'cursors',
+              tile: 1,
+              dx: Math.round(this.cursor.x) - 4,
+              dy: Math.round(this.cursor.y) - 4
+            });
+            gbox.blitTile(c, {
+              tileset: 'cursors',
+              tile: 2,
+              dx: Math.round(this.closest_star.x) - 4,
+              dy: Math.round(this.closest_star.y) - 4
+            });
+            return circle(c, '#d97777', Math.round(this.current_star.x), Math.round(this.current_star.y), player.fuel() / LY_SCALE);
+          }
+        }
+      };
+
+      Starmap.prototype.group = 'starmap';
+
+      Starmap.prototype.closest = function(x, y) {
+        var d2, dx, dy, minD2, ret, star, _i, _len, _ref;
+        minD2 = 999999;
+        ret = void 0;
+        _ref = this.stars;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          star = _ref[_i];
+          dx = x - star.x;
+          dy = y - star.y;
+          d2 = dx * dx + dy * dy;
+          if (d2 < minD2) {
+            minD2 = d2;
+            ret = star;
+          }
+        }
+        return ret;
+      };
+
+      return Starmap;
+
+    })();
+    GAS_GIANT_MIN_ORBIT = 0.5;
+    PLANET_CLASSES = {
+      gas_giant: {
+        prob: 0.5,
+        min_radius: 60,
+        max_radius: 120,
+        min_moons: 0,
+        max_moons: 8,
+        min_orbit: 0.5,
+        max_orbit: 1.0,
+        station_prob: 0.5,
+        max_mission_count: 5,
+        ring_prob: 0.25
+      },
+      rocky: {
+        prob: 0.5,
+        min_radius: 20,
+        max_radius: 60,
+        min_orbit: 0.15,
+        max_orbit: 1.0,
+        min_moons: 0,
+        max_moons: 3,
+        station_prob: 0.75,
+        max_mission_count: 10,
+        ring_prob: 0.1
+      },
+      moon: {
+        min_radius: 10,
+        max_radius: 20,
+        station_prob: 0.25,
+        max_mission_count: 7,
+        ring_prob: 0
+      }
+    };
+    current_planet = void 0;
+    MIN_ITG_STATION_PROB = 0.1;
+    MIN_PIRATE_STATION_PROB = 0.1;
+    MIN_STATION_DIST = 100;
+    Planet = (function() {
+
+      function Planet(star, num, moon) {
+        var ang, c, cls, count, itg_station_prob, m, max_resource_count, mcount, name, pirate_station_prob, r, res, x, y;
+        this._x = 0;
+        this._y = 0;
+        this.star = star;
+        this.num = num;
+        this.orbit = this.star.pcount / this.num;
+        if (moon) {
+          this.ptype = 'moon';
+          this.color = rgba(choose(planetcolors[2]));
+        } else if (this.orbit > GAS_GIANT_MIN_ORBIT && Math.random() < PLANET_CLASSES.gas_giant.prob) {
+          this.ptype = 'gas_giant';
+          this.color = rgba(choose(planetcolors[1]));
+        } else {
+          this.ptype = 'rocky';
+          this.color = rgba(choose(planetcolors[0]));
+        }
+        cls = PLANET_CLASSES[this.ptype];
+        this.radius = frand(cls.min_radius, cls.max_radius);
+        this.wealth = Math.random();
+        max_resource_count = ((Math.PI * this.radius * this.radius) / 50) * this.wealth;
+        this.resources = {};
+        for (name in RESOURCES) {
+          if (!__hasProp.call(RESOURCES, name)) continue;
+          res = RESOURCES[name];
+          this.resources[name] = [];
+          count = Math.round(frand(0, res[this.ptype + '_prob']) * max_resource_count);
+          c = 0;
+          while (c < count) {
+            ang = Math.PI * 2 * Math.random();
+            r = this.radius * Math.random();
+            x = r * Math.cos(ang);
+            y = r * Math.sin(ang);
+            this.resources[name].push(new Resource(name, x, y, 0, 0, this));
+            ++c;
+          }
+        }
+        this.itg_station = null;
+        this.pirate_station = null;
+        itg_station_prob = cls.station_prob * this.star.itg + MIN_ITG_STATION_PROB;
+        pirate_station_prob = cls.station_prob * this.star.pirate + MIN_PIRATE_STATION_PROB;
+        if (Math.random() < itg_station_prob) {
+          r = MIN_STATION_DIST + this.radius * 2;
+          ang = Math.random() * 2 * Math.PI;
+          x = this._x + r * Math.cos(ang);
+          y = this._y + r * Math.sin(ang);
+          this.itg_station = new Station(this, 'itg', x, y);
+          this.itg_station.new_missions();
+        }
+        if (Math.random() < pirate_station_prob) {
+          r = MIN_STATION_DIST + this.radius * 4;
+          ang = Math.random() * 2 * Math.PI;
+          x = this._x + r * Math.cos(ang);
+          y = this._y + r * Math.sin(ang);
+          this.pirate_station = new Station(this, 'pirate', x, y);
+          this.pirate_station.new_missions();
+        }
+        this.moons = [];
+        if (moon) return;
+        mcount = Math.round(rand(cls.min_moons, cls.max_moons) * (this.radius / 120));
+        m = 0;
+        while (m < mcount) {
+          this.moons.push(new Planet(star, 0, true));
+          ++m;
+        }
+        this.init();
+      }
+
+      Planet.prototype.addResources = function() {
+        var k, r, v, _ref, _results;
+        _ref = this.resources;
+        _results = [];
+        for (k in _ref) {
+          if (!__hasProp.call(_ref, k)) continue;
+          v = _ref[k];
+          _results.push((function() {
+            var _i, _len, _results2;
+            _results2 = [];
+            for (_i = 0, _len = v.length; _i < _len; _i++) {
+              r = v[_i];
+              _results2.push(gbox.addObject(r));
+            }
+            return _results2;
+          })());
+        }
+        return _results;
+      };
+
+      Planet.prototype.count = function() {
+        return 1 + this.moons.length;
+      };
+
+      Planet.prototype.group = 'planet';
+
+      Planet.prototype.init = function() {
+        this.ang = 0;
+        this.xoff = 0;
+        this.yoff = 0;
+        this.dist = 3;
+        this.dirx = frand(-this.radius, this.radius);
+        return this.diry = frand(-this.radius * .1, this.radius * .1);
+      };
+
+      Planet.prototype.first = function() {
+        this.ang += 0.02;
+        this.xoff = 0;
+        this.yoff = 3 * Math.sin(this.ang);
+        this.x = Math.round(this._x + this.xoff);
+        return this.y = Math.round(this._y + this.yoff);
+      };
+
+      Planet.prototype.render = function(scale, x, y, dirx, diry) {
+        var ctx, grd, radius;
+        ctx = gbox.getBufferContext();
+        if (!ctx) return;
+        radius = this.radius * scale;
+        dirx *= scale;
+        diry *= scale;
+        ctx.beginPath();
+        grd = ctx.createRadialGradient(x + dirx, y + diry, 0, x + dirx, y + diry, radius * 1.4);
+        grd.addColorStop(0, this.color);
+        grd.addColorStop(1, '#000510');
+        ctx.fillStyle = grd;
+        ctx.arc(x, y, radius, 0, 2 * Math.PI, false);
+        ctx.fill();
+        return ctx.closePath();
+      };
+
+      Planet.prototype.blit = function() {
+        var x, y;
+        x = Math.round(this.x - cam.x);
+        y = Math.round(this.y - cam.y);
+        return this.render(1.0, x, y, this.dirx, this.diry);
+      };
+
+      return Planet;
+
+    })();
+    window.planetmap = void 0;
+    Planetmap = (function() {
+
+      Planetmap.prototype.group = 'planetmap';
+
+      function Planetmap(star) {
+        var m, moon, p, planet, x, y, _i, _j, _len, _len2, _ref, _ref2;
+        this.skip = false;
+        this.star = star;
+        this.tick = 0;
+        this.cursor = {
+          x: 0,
+          y: 0
+        };
+        this.positions = [];
+        y = H / 2;
+        p = 0;
+        _ref = this.star.planets;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          planet = _ref[_i];
+          this.positions.push([]);
+          x = W * 0.1 + (W * 0.8) * ((p + 1) / this.star.planets.length);
+          planet.cursorpos = {
+            x: x,
+            y: y
+          };
+          this.positions[p].push(planet.cursorpos);
+          m = 0;
+          _ref2 = planet.moons;
+          for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+            moon = _ref2[_j];
+            moon.cursorpos = {
+              x: x,
+              y: y + (planet.radius * 0.5 + (m + 1) * PLANET_CLASSES.moon.max_radius) * 0.5
+            };
+            this.positions[p].push(moon.cursorpos);
+            ++m;
+          }
+          ++p;
+        }
+      }
+
+      Planetmap.prototype.first = function() {
+        if (this.skip) {
+          this.skip = false;
+          return;
+        }
+        if (gbox.keyIsHit('c')) {
+          starmapMode();
+          return;
+        }
+        if (gbox.keyIsHit('a')) {
+          if (this.cursor.y) {
+            current_planet = this.star.planets[this.cursor.x].moons[this.cursor.y - 1];
+          } else {
+            current_planet = this.star.planets[this.cursor.x];
+          }
+          current_planet.init();
+          starmap.current_star = current_planet.star;
+          player.vx = 0;
+          player.vy = 0;
+          player.x = 0;
+          player.y = 0;
+          flightMode(true);
+        }
+        if (this.positions.length === 0) return;
+        if (gbox.keyIsHit('up')) {
+          this.cursor.y -= 1;
+        } else if (gbox.keyIsHit('down')) {
+          this.cursor.y += 1;
+        }
+        if (gbox.keyIsHit('left')) {
+          this.cursor.x -= 1;
+        } else if (gbox.keyIsHit('right')) {
+          this.cursor.x += 1;
+        }
+        if (this.cursor.x < 0) this.cursor.x = this.positions.length - 1;
+        if (this.cursor.y < 0) {
+          this.cursor.y = this.positions[this.cursor.x].length - 1;
+        }
+        this.cursor.x = this.cursor.x % this.positions.length;
+        return this.cursor.y = this.cursor.y % this.positions[this.cursor.x].length;
+      };
+
+      Planetmap.prototype.blit = function() {
+        var c, m, moon, p, planet, x, y, _i, _j, _k, _len, _len2, _len3, _ref, _ref2, _ref3;
+        c = gbox.getBufferContext();
+        if (c) {
+          gbox.blitAll(c, gbox.getImage('starmap_gui'), {
+            dx: 0,
+            dy: 0
+          });
+          gbox.blitText(c, {
+            font: 'small',
+            text: "PLANETS: " + (this.star.planet_count()),
+            dx: 1,
+            dy: H - 12,
+            dw: 64,
+            dh: 16
+          });
+          if (this.positions.length === 0) return;
+          p = 0;
+          _ref = this.star.planets;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            planet = _ref[_i];
+            if (p !== this.cursor.x) {
+              x = this.positions[p][0].x;
+              y = this.positions[p][0].y;
+              planet.render(0.25, x, y, -planet.radius, 0);
+              m = 0;
+              _ref2 = planet.moons;
+              for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+                moon = _ref2[_j];
+                x = this.positions[p][m + 1].x;
+                y = this.positions[p][m + 1].y;
+                moon.render(0.25, x, y, -moon.radius, 0);
+                ++m;
+              }
+            }
+            ++p;
+          }
+          p = this.cursor.x;
+          planet = this.star.planets[p];
+          x = this.positions[p][0].x;
+          y = this.positions[p][0].y;
+          planet.render(0.25, x, y, -planet.radius * 0.5, 0);
+          m = 0;
+          _ref3 = planet.moons;
+          for (_k = 0, _len3 = _ref3.length; _k < _len3; _k++) {
+            moon = _ref3[_k];
+            x = this.positions[p][m + 1].x;
+            y = this.positions[p][m + 1].y;
+            moon.render(0.25, x, y, -moon.radius * 0.5, 0);
+            ++m;
+          }
+          if (current_planet && current_planet.star === this.star) {
+            gbox.blitTile(c, {
+              tileset: 'cursors',
+              tile: 3,
+              dx: Math.round(current_planet.cursorpos.x),
+              dy: Math.round(current_planet.cursorpos.y) - 4
+            });
+          }
+          return gbox.blitTile(c, {
+            tileset: 'cursors',
+            tile: 4,
+            dx: Math.round(this.positions[this.cursor.x][this.cursor.y].x),
+            dy: Math.round(this.positions[this.cursor.x][this.cursor.y].y) - 4
+          });
+        }
+      };
+
+      return Planetmap;
+
+    })();
+    STATIONS = {
+      'itg': {
+        num: 0,
+        frame_length: 60 / 2,
+        fugitive_rate: 0.1
+      },
+      'pirate': {
+        num: 1,
+        frame_length: 60 / 2,
+        fugitive_rate: 0.4
+      }
+    };
+    Person = (function() {
+
+      function Person(role, fugitive) {
+        this.parts = [];
+        this.parts.push(rand(0, 16));
+        this.parts.push(rand(0, 16));
+        if (rand(0, 1)) this.parts.push(this.parts[1]);
+        this.role = role;
+        this.fugitive = fugitive;
+      }
+
+      Person.prototype.render = function(x, y, alpha) {
+        var n, partNum, _i, _len, _ref, _results;
+        n = 0;
+        _ref = this.parts;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          partNum = _ref[_i];
+          gbox.blitTile(gbox.getBufferContext(), {
+            tileset: 'peoples_tiles',
+            tile: n * 16 + partNum,
+            dx: Math.round(x),
+            dy: Math.round(y)
+          });
+          _results.push(++n);
+        }
+        return _results;
+      };
+
+      return Person;
+
+    })();
+    Mission = (function(_super) {
+
+      __extends(Mission, _super);
+
+      function Mission(person) {
+        this.person = person;
+        this.accepted = false;
+      }
+
+      Mission.prototype.a = function() {
+        var dq;
+        dq = this.doesnt_qualify();
+        if (dq) {
+          console.log(dq);
+          return false;
+        }
+        this.accepted = !this.accepted;
+        return true;
+      };
+
+      Mission.prototype.doesnt_qualify = function() {
+        return false;
+      };
+
+      Mission.prototype.text = function() {
+        if (this.accepted) {
+          return '[X]';
+        } else {
+          return '[ ]';
+        }
+      };
+
+      Mission.prototype.render = function(x, top, alpha) {
+        this.person.render(x, top, alpha);
+        return Mission.__super__.render.call(this, x + 24, top + 4, alpha);
+      };
+
+      return Mission;
+
+    })(MenuItem);
+    CabinDweller = (function(_super) {
+
+      __extends(CabinDweller, _super);
+
+      function CabinDweller(person, star) {
+        this.person = person;
+        this.star = star;
+      }
+
+      CabinDweller.prototype.a = function() {
+        if (CabinDweller.__super__.a.call(this)) {
+          if (this.accepted) {
+            console.log('Accepted Taxi Mission!');
+            return --player.available_cabins;
+          } else {
+            console.log('Abandoned Taxi Mission!');
+            return ++player.available_cabins;
+          }
+        }
+      };
+
+      CabinDweller.prototype.doesnt_qualify = function() {
+        if (this.accepted) return false;
+        if (player.available_cabins <= 0) {
+          return 'No available cabins.';
+        } else {
+          return false;
+        }
+      };
+
+      return CabinDweller;
+
+    })(Mission);
+    TaxiMission = (function(_super) {
+
+      __extends(TaxiMission, _super);
+
+      function TaxiMission() {
+        TaxiMission.__super__.constructor.apply(this, arguments);
+      }
+
+      TaxiMission.prototype.text = function() {
+        return TaxiMission.__super__.text.call(this) + 'Taxi';
+      };
+
+      return TaxiMission;
+
+    })(CabinDweller);
+    CrewMission = (function(_super) {
+
+      __extends(CrewMission, _super);
+
+      function CrewMission() {
+        CrewMission.__super__.constructor.apply(this, arguments);
+      }
+
+      CrewMission.prototype.text = function() {
+        return CrewMission.__super__.text.call(this) + 'Crew';
+      };
+
+      return CrewMission;
+
+    })(CabinDweller);
+    DOCKING_DURATION = 80;
+    Station = (function() {
+
+      Station.prototype.new_missions = function() {
+        var activity, i, max_count, mission, mission_count, person;
+        max_count = PLANET_CLASSES[this.planet.ptype].max_mission_count;
+        activity = this.planet.star.itg + this.planet.star.pirate;
+        mission_count = Math.round(frand(0, 1) * activity * max_count);
+        this.missions = [];
+        i = 0;
+        while (i < mission_count) {
+          person = new Person('passenger', frand(0, 1) < STATIONS[this.name].fugitive_rate);
+          mission = void 0;
+          switch (rand(0, 4)) {
+            case 0:
+              mission = new TaxiMission(person);
+              break;
+            default:
+              mission = new CrewMission(person);
+          }
+          this.missions.push(mission);
+          ++i;
+        }
+        return console.log(this.missions);
+      };
+
+      Station.prototype.group = 'stations';
+
+      function Station(planet, name, x, y) {
+        this.planet = planet;
+        this.name = name;
+        this.x = x;
+        this.y = y;
+        this.num = STATIONS[this.name].num;
+        this.frame_length = STATIONS[this.name].frame_length;
+        this.next_frame = this.frame_length;
+        this.frame = this.num * 4;
+        this.tileset = 'stations_tiles';
+        this.ang = 0;
+        this.docking_count = 0;
+      }
+
+      Station.prototype.w = 32;
+
+      Station.prototype.h = 32;
+
+      Station.prototype.die = function() {
+        return gbox.trashObject(this);
+      };
+
+      Station.prototype.first = function() {
+        --this.next_frame;
+        if (this.next_frame < 0) {
+          this.frame = this.num * 4 + ((this.frame % 4) + 1) % 4;
+          this.next_frame = this.frame_length;
+        }
+        this.ang += 0.034;
+        this.yoff = 2 * Math.sin(this.ang);
+        if (!player.going && gbox.collides(this, player)) {
+          ++this.docking_count;
+        } else {
+          this.docking_count = 0;
+        }
+        if (this.docking_count > DOCKING_DURATION) {
+          stationMode(this);
+          return this.docking_count = -DOCKING_DURATION;
+        }
+      };
+
+      Station.prototype.blit = function() {
+        return gbox.blitTile(gbox.getBufferContext(), {
+          tileset: this.tileset,
+          tile: this.frame,
+          dx: Math.round(this.x - cam.x),
+          dy: Math.round(this.y + this.yoff - cam.y)
+        });
+      };
+
+      return Station;
+
+    })();
+    STATION_SUB_SCREENS = [
+      {
+        name: 'Cargo',
+        bg: 'starmap_gui'
+      }, {
+        name: 'Missions',
+        bg: 'starmap_gui'
+      }, {
+        name: 'Hangar',
+        bg: 'starmap_gui'
+      }
+    ];
+    StationScreen = (function(_super) {
+
+      __extends(StationScreen, _super);
+
+      StationScreen.prototype.group = 'stationscreen';
+
+      function StationScreen(station) {
+        var i, scr, _i, _len;
+        StationScreen.__super__.constructor.call(this);
+        this.station = station;
+        this.skip = false;
+        this.sub_screen = 0;
+        this.sub_items = [];
+        i = 0;
+        for (_i = 0, _len = STATION_SUB_SCREENS.length; _i < _len; _i++) {
+          scr = STATION_SUB_SCREENS[_i];
+          this.sub_items.push([]);
+          switch (scr.name) {
+            case 'Cargo':
+              false;
+              break;
+            case 'Missions':
+              this.sub_items[i] = this.station.missions;
+              break;
+            case 'Hangar':
+              false;
+          }
+          ++i;
+        }
+      }
+
+      StationScreen.prototype.c = function() {
+        gbox.trashObject(this);
+        return flightMode();
+      };
+
+      StationScreen.prototype.first = function() {
+        if (this.skip) {
+          this.skip = false;
+          return;
+        }
+        if (gbox.keyIsHit('left')) {
+          this.sub_screen -= 1;
+          console.log('l');
+        } else if (gbox.keyIsHit('right')) {
+          this.sub_screen += 1;
+          console.log('r');
+        }
+        if (this.sub_screen < 0) this.sub_screen = STATION_SUB_SCREENS.length - 1;
+        this.sub_screen = this.sub_screen % STATION_SUB_SCREENS.length;
+        this.items = this.sub_items[this.sub_screen];
+        return this.update();
+      };
+
+      StationScreen.prototype.blit = function() {
+        var c;
+        c = gbox.getBufferContext();
+        if (!c) return;
+        gbox.blitAll(c, gbox.getImage(STATION_SUB_SCREENS[this.sub_screen].bg), {
+          dx: 0,
+          dy: 0
+        });
+        return this.render(0, 0);
+      };
+
+      return StationScreen;
+
+    })(Menu);
+    PARTICLES = {
+      fire: {
+        num: 0,
+        lifespan: 60,
+        randomframe: false,
+        frame_length: 60 / 16
+      },
+      wreckage: {
+        num: 1,
+        lifespan: 200,
+        frame_length: 4,
+        randomframe: true
+      }
+    };
+    addParticle = function(name, x, y, vx, vy) {
+      return gbox.addObject({
+        group: 'particles',
+        num: PARTICLES[name].num,
+        lifespan: PARTICLES[name].lifespan,
+        w: 0.1,
+        h: 0.1,
+        vx: 0,
+        vy: 0,
+        init: function() {
+          this.frame_length = PARTICLES[name].frame_length;
+          this.next_frame = this.frame_length;
+          this.frame = this.num * 16;
+          if (PARTICLES[name].randomframe) this.frame += rand(0, 15);
+          this.tileset = 'particles_tiles';
+          this.w = 3;
+          this.h = 3;
+          if (vx && vy) {
+            this.vx = vx;
+            this.vy = vy;
+          }
+          this.tick = 0;
+          this.x = x;
+          return this.y = y;
+        },
+        die: function() {
+          return gbox.trashObject(this);
+        },
+        first: function() {
+          this.x += this.vx;
+          this.y += this.vy;
+          --this.next_frame;
+          if (this.next_frame < 0) {
+            this.frame = this.num * 16 + ((this.frame % 16) + 1) % 16;
+            this.next_frame = this.frame_length;
+          }
+          ++this.tick;
+          if (this.tick > this.lifespan) return this.die();
+        },
+        initialize: function() {
+          return this.init();
+        },
+        blit: function() {
+          return gbox.blitTile(gbox.getBufferContext(), {
+            tileset: this.tileset,
+            tile: this.frame,
+            dx: Math.round(this.x - cam.x),
+            dy: Math.round(this.y - cam.y)
+          });
+        }
+      });
+    };
+    RESOURCES = {
+      'scrap metal': {
+        num: 0,
+        tons_per_unit: 1,
+        gas_giant_prob: 0.1,
+        rocky_prob: 0.5,
+        moon_prob: 0.75
+      },
+      'lifeforms': {
+        num: 1,
+        tons_per_unit: 0.05,
+        gas_giant_prob: 0.05,
+        rocky_prob: 0.2,
+        moon_prob: 0.1
+      },
+      'fuel': {
+        num: 2,
+        tons_per_unit: 0.25,
+        gas_giant_prob: 0.25,
+        rocky_prob: 0.1,
+        moon_prob: 0.1
+      },
+      'minerals': {
+        num: 3,
+        tons_per_unit: 0.5,
+        gas_giant_prob: 0.05,
+        rocky_prob: 0.5,
+        moon_prob: 0.2
+      },
+      'narcotics': {
+        num: 4,
+        tons_per_unit: 0.01,
+        gas_giant_prob: 0,
+        rocky_prob: 0,
+        moon_prob: 0
+      }
+    };
+    Resource = (function() {
+
+      Resource.prototype.group = 'resources';
+
+      function Resource(name, x, y, vx, vy, planet) {
+        this.planet = planet;
+        this.num = RESOURCES[name].num;
+        this.next_frame = this.frame_length;
+        this.frame = rand(this.num * 8, this.num * 8 + 8);
+        this.tileset = 'resources_tiles';
+        this.w = 3;
+        this.h = 3;
+        if (vx && vy) {
+          this.vx = vx;
+          this.vy = vy;
+        }
+        this.tick = 0;
+        this.xoff = x;
+        this.yoff = y;
+        this.x = 0;
+        this.y = 0;
+        this.active = true;
+      }
+
+      Resource.prototype.frame_length = 4;
+
+      Resource.prototype.vx = 0;
+
+      Resource.prototype.vy = 0;
+
+      Resource.prototype.die = function() {
+        this.active = false;
+        return gbox.trashObject(this);
+      };
+
+      Resource.prototype.first = function() {
+        if (!this.active) return;
+        if (this.planet) {
+          this.x = this.planet.x + this.xoff;
+          this.y = this.planet.y + this.yoff;
+        } else {
+          this.x += this.vx;
+          this.y += this.vy;
+          this.vx *= 0.005;
+          this.vy *= 0.005;
+        }
+        --this.next_frame;
+        if (this.next_frame < 0) {
+          this.frame = this.num * 8 + ((this.frame % 8) + 1) % 8;
+          return this.next_frame = this.frame_length;
+        }
+      };
+
+      Resource.prototype.blit = function() {
+        if (!this.active) return;
+        return gbox.blitTile(gbox.getBufferContext(), {
+          tileset: this.tileset,
+          tile: this.frame,
+          dx: Math.round(this.x - cam.x),
+          dy: Math.round(this.y - cam.y)
+        });
+      };
+
+      return Resource;
+
+    })();
+    main = function() {
+      gbox.setGroups(['background', 'game', 'starmap', 'planetmap', 'stationscreen', 'planet', 'stations', 'resources', 'particles', 'player', 'friend_shots', 'baddies', 'drones', 'foe_shots', 'pause']);
+      loadColors();
+      maingame = gamecycle.createMaingame('game', 'game');
+      maingame.gameMenu = function() {
+        return true;
+      };
+      maingame.gameIntroAnimation = function() {
+        return true;
+      };
+      maingame.gameTitleIntroAnimation = function() {
+        gbox.blitFade(gbox.getBufferContext(), {
+          alpha: 1
+        });
+        gbox.blitAll(gbox.getBufferContext(), gbox.getImage('logo'), {
+          dx: 1,
+          dy: 1
+        });
+        return gbox.keyIsHit('a');
+      };
+      maingame.pressStartIntroAnimation = function(reset) {
+        return gbox.keyIsHit('a');
+      };
+      maingame.initializeGame = function() {
+        player = new Player;
+        starmap = new Starmap(5, 34, 0.6);
+        starmap.current_star = choose(starmap.stars);
+        starmap.cursor = {
+          x: starmap.current_star.x,
+          y: starmap.current_star.y
+        };
+        starmap.current_star.generate_planets();
+        current_planet = choose(starmap.current_star.planets);
+        window.planetmap = new Planetmap(starmap.current_star);
+        gbox.addObject(starmap);
+        cam = addCamera();
+        return gbox.addObject({
+          id: 'bg_id',
+          group: 'background',
+          color: 'rgb(0,0,0)',
+          blit: function() {
+            gbox.blitFade(gbox.getBufferContext(), {
+              color: '#000510',
+              alpha: 1
+            });
+            gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
+              dx: Math.round(-cam.x % W),
+              dy: Math.round(-cam.y % H)
+            });
+            gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
+              dx: Math.round(-cam.x % W - W),
+              dy: Math.round(-cam.y % H - H)
+            });
+            gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
+              dx: Math.round(-cam.x % W),
+              dy: Math.round(-cam.y % H - H)
+            });
+            gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
+              dx: Math.round(-cam.x % W + W),
+              dy: Math.round(-cam.y % H - H)
+            });
+            gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
+              dx: Math.round(-cam.x % W + W),
+              dy: Math.round(-cam.y % H)
+            });
+            gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
+              dx: Math.round(-cam.x % W + W),
+              dy: Math.round(-cam.y % H + H)
+            });
+            gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
+              dx: Math.round(-cam.x % W),
+              dy: Math.round(-cam.y % H + H)
+            });
+            gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
+              dx: Math.round(-cam.x % W - W),
+              dy: Math.round(-cam.y % H + H)
+            });
+            return gbox.blitAll(gbox.getBufferContext(), gbox.getImage('bg'), {
+              dx: Math.round(-cam.x % W - W),
+              dy: Math.round(-cam.y % H)
+            });
+          }
+        });
+      };
+      return gbox.go();
+    };
+    return window.addEventListener('load', loadResources, false);
   }).call(this);</script></html>
