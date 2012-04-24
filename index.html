@@ -1,5 +1,5 @@
 <html><head><script type="text/javascript" src="akihabara/gbox.js"></script><script type="text/javascript" src="akihabara/iphopad.js"></script><script type="text/javascript" src="akihabara/trigo.js"></script><script type="text/javascript" src="akihabara/toys.js"></script><script type="text/javascript" src="akihabara/help.js"></script><script type="text/javascript" src="akihabara/tool.js"></script><script type="text/javascript" src="akihabara/gamecycle.js"></script><script type="text/javascript" src="seedrandom-min.js"></script><link rel="stylesheet" href="style.css" /><meta name="viewport" content="width:device-width; initial-scale:1.0; maximum-scale:1.0; user-scalable:0;" /></head><body><div class="directions"></div><canvas width="327" height="1" style="display:none" id="starcolors"></canvas><canvas width="16" height="3" style="display:none" id="planetcolors"></canvas><canvas width="320" height="320" style="display:none" id="starmap"></canvas></body><script>var __slice = Array.prototype.slice;var __hasProp = Object.prototype.hasOwnProperty;var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };var __extends = function(child, parent) {  for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }  function ctor() { this.constructor = child; }  ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype;  return child; };var __indexOf = Array.prototype.indexOf || function(item) {  for (var i = 0, l = this.length; i < l; i++) {    if (this[i] === item) return i;  } return -1; };(function () {
-    var ABANDON_MESSAGES, ACCEPT_MESSAGES, BASE_AFTERBURN, BASE_CARGO_CAP, BASE_SEED, BASE_SHIELDS, BASE_THRUST, BASE_WCHARGE_CAP, BASE_WCHARGE_RATE, BASE_WPOWER, BASE_WSPAN, BASE_WSPEED, CabinDweller, CargoItem, CrewMission, DOCKING_DURATION, EQUIPMENT, Equipment, FAILURE_MESSAGES, FUGITIVE_TAXI_BONUS, GAME_OVER_MSGS, GAS_GIANT_MIN_ORBIT, H, ITG_INSPECT_PROB, LY_SCALE, MAX_ITG_REGIONS, MAX_ITG_REGION_RADIUS, MAX_PIRATE_REGIONS, MAX_PIRATE_REGION_RADIUS, MAX_STAR_COUNT, MAX_STAR_PLANETS, MAX_STAR_RAD, MIN_ITG_REGIONS, MIN_ITG_REGION_RADIUS, MIN_ITG_STATION_PROB, MIN_PIRATE_REGIONS, MIN_PIRATE_REGION_RADIUS, MIN_PIRATE_STATION_PROB, MIN_STAR_COUNT, MIN_STAR_RAD, MIN_STATION_DIST, Menu, MenuItem, Message, Mission, NO_CABINS_MESSAGES, PARTICLES, PLANET_CLASSES, Person, Planet, Planetmap, Player, RESOURCES, Resource, ResourceExchanger, STATIONS, STATION_SUB_SCREENS, SUCCESS_MESSAGES, Star, Starmap, Station, StationScreen, TURN_SPEED, TaxiMission, W, addBaddie, addCamera, addDrone, addParticle, addShot, cam, choose, circle, current_planet, date, flightMode, frand, gaus, getPixel, groupCollides, loadColors, loadResources, main, maingame, message, planetcolors, planetmapMode, player, rand, rgba, setPixel, starcolors, starmap, starmapMode, stationMode;
+    var ABANDON_MESSAGES, ACCEPT_MESSAGES, BASE_AFTERBURN, BASE_CARGO_CAP, BASE_SEED, BASE_SHIELDS, BASE_THRUST, BASE_WCHARGE_CAP, BASE_WCHARGE_RATE, BASE_WPOWER, BASE_WSPAN, BASE_WSPEED, CabinDweller, CargoItem, CrewMission, DEFAULT_RADAR_RENDER, DOCKING_DURATION, EQUIPMENT, Equipment, FAILURE_MESSAGES, FUGITIVE_TAXI_BONUS, GAME_OVER_MSGS, GAS_GIANT_MIN_ORBIT, H, ITG_INSPECT_PROB, LY_SCALE, MAX_ITG_REGIONS, MAX_ITG_REGION_RADIUS, MAX_PIRATE_REGIONS, MAX_PIRATE_REGION_RADIUS, MAX_STAR_COUNT, MAX_STAR_PLANETS, MAX_STAR_RAD, MIN_ITG_REGIONS, MIN_ITG_REGION_RADIUS, MIN_ITG_STATION_PROB, MIN_PIRATE_REGIONS, MIN_PIRATE_REGION_RADIUS, MIN_PIRATE_STATION_PROB, MIN_STAR_COUNT, MIN_STAR_RAD, MIN_STATION_DIST, Menu, MenuItem, Message, Mission, NO_CABINS_MESSAGES, PARTICLES, PLANET_CLASSES, Person, Planet, Planetmap, Player, RADAR_ITEMS, RESOURCES, Radar, Resource, ResourceExchanger, STATIONS, STATION_SUB_SCREENS, SUCCESS_MESSAGES, Star, Starmap, Station, StationScreen, TURN_SPEED, TaxiMission, W, addBaddie, addCamera, addDrone, addParticle, addShot, cam, choose, circle, current_planet, date, dist, flightMode, frand, gaus, getPixel, groupCollides, loadColors, loadResources, main, maingame, message, planetcolors, planetmapMode, player, rand, rgba, setPixel, starcolors, starmap, starmapMode, stationMode;
     BASE_SEED = 'WEEEEE';
     Math.seedrandom(BASE_SEED);
     window.clamp = function(num, min, max) {
@@ -15,6 +15,12 @@
       var rnd;
       rnd = (Math.random() * 2 - 1) + (Math.random() * 2 - 1) + (Math.random() * 2 - 1);
       return rnd * stdv + mean;
+    };
+    dist = function(a, b) {
+      var dx, dy;
+      dx = a.x - b.x;
+      dy = a.y - b.y;
+      return Math.sqrt(dx * dx + dy * dy);
     };
     choose = function(array) {
       return array[rand(0, array.length - 1)];
@@ -99,7 +105,7 @@
     };
     loadResources = function() {
       help.akihabaraInit({
-        title: 'MICROVERSE (working title)',
+        title: 'μniverse',
         width: W,
         height: H,
         zoom: 2
@@ -208,7 +214,7 @@
     };
     stationMode = function(station) {
       var g, groups, stationscreen, stopGroups, _i, _j, _len, _len2;
-      stopGroups = ['background', 'planet', 'player', 'baddies', 'drones', 'friend_shots', 'foe_shots', 'resources', 'particles', 'starmap', 'stations'];
+      stopGroups = ['background', 'planet', 'player', 'baddies', 'drones', 'friend_shots', 'foe_shots', 'resources', 'particles', 'starmap', 'stations', 'radar'];
       for (_i = 0, _len = stopGroups.length; _i < _len; _i++) {
         g = stopGroups[_i];
         gbox.stopGroup(g);
@@ -225,7 +231,7 @@
     };
     planetmapMode = function() {
       var g, groups, stopGroups, _i, _j, _len, _len2;
-      stopGroups = ['background', 'planet', 'player', 'baddies', 'drones', 'friend_shots', 'foe_shots', 'resources', 'particles', 'starmap', 'stations'];
+      stopGroups = ['background', 'planet', 'player', 'baddies', 'drones', 'friend_shots', 'foe_shots', 'resources', 'particles', 'starmap', 'stations', 'radar'];
       for (_i = 0, _len = stopGroups.length; _i < _len; _i++) {
         g = stopGroups[_i];
         gbox.stopGroup(g);
@@ -243,7 +249,7 @@
     };
     starmapMode = function() {
       var g, groups, stopGroups, _i, _j, _len, _len2;
-      stopGroups = ['background', 'planet', 'player', 'baddies', 'drones', 'friend_shots', 'foe_shots', 'resources', 'particles', 'planetmap', 'stations'];
+      stopGroups = ['background', 'planet', 'player', 'baddies', 'drones', 'friend_shots', 'foe_shots', 'resources', 'particles', 'planetmap', 'stations', 'radar'];
       for (_i = 0, _len = stopGroups.length; _i < _len; _i++) {
         g = stopGroups[_i];
         gbox.stopGroup(g);
@@ -273,6 +279,8 @@
       gbox.clearGroup('planet');
       gbox.clearGroup('resources');
       gbox.clearGroup('stations');
+      gbox.clearGroup('radar');
+      gbox.addObject(new Radar);
       gbox.addObject(player);
       gbox.addObject(current_planet);
       if (current_planet.itg_station) gbox.addObject(current_planet.itg_station);
@@ -285,7 +293,7 @@
         g = stopGroups[_i];
         gbox.stopGroup(g);
       }
-      groups = ['background', 'planet', 'player', 'baddies', 'drones', 'friend_shots', 'foe_shots', 'resources', 'particles', 'stations'];
+      groups = ['background', 'planet', 'player', 'baddies', 'drones', 'friend_shots', 'foe_shots', 'resources', 'particles', 'stations', 'radar'];
       for (_j = 0, _len2 = groups.length; _j < _len2; _j++) {
         g = groups[_j];
         gbox.stopGroup(g);
@@ -334,7 +342,7 @@
 
       Message.prototype.blit = function(x, y) {
         if (!this.visible) return;
-        if (this.msgs[0].person) this.msgs[0].person.render_face(1, 1);
+        if (this.msgs[0].person) this.msgs[0].person.render_face(1, 1, 1, true);
         return gbox.blitText(gbox.getBufferContext(), {
           font: 'small',
           text: this.msgs[0].str,
@@ -453,8 +461,8 @@
         return gbox.blitText(gbox.getBufferContext(), {
           font: 'small',
           text: this.text(),
-          dx: x,
-          dy: top,
+          dx: Math.round(x),
+          dy: Math.round(top),
           dw: W,
           dh: 16,
           halign: gbox.ALIGN_LEFT,
@@ -474,20 +482,109 @@
         vx: 0,
         vy: 0,
         group: 'game',
-        init: function() {
+        initialize: function() {
+          this.max_dist = 100;
+          this.max_dist2 = this.max_dist * this.max_dist;
           this.x = 100;
           this.y = 100;
           this.vx = 0;
-          return this.vy = 0;
+          this.vy = 0;
+          this.w = W;
+          return this.h = H;
         },
         first: function() {
+          var c, d, d2, ddx, ddy, dr, dx, dy;
           this.vx = (player.x + player.vx * 60 - (this.x + 160)) * 0.05;
           this.vy = (player.y + player.vy * 60 - (this.y + 160)) * 0.05;
           this.x += this.vx;
-          return this.y += this.vy;
+          this.y += this.vy;
+          c = {
+            x: this.x + this.w / 2,
+            y: this.y + this.h / 2
+          };
+          dx = c.x - player.x;
+          dy = c.y - player.y;
+          d2 = dx * dx + dy * dy;
+          if (d2 > this.max_dist2) {
+            d = Math.sqrt(d2);
+            dr = (d - this.max_dist) / d;
+            ddx = dr * dx;
+            ddy = dr * dy;
+            this.x -= ddx;
+            return this.y -= ddy;
+          }
         }
       });
     };
+    DEFAULT_RADAR_RENDER = function(x, y, alpha) {
+      if (x > cam.h - 2) x = cam.h - 2;
+      return circle(gbox.getBufferContext(), 'white', Math.round(x), Math.round(y), 2);
+    };
+    RADAR_ITEMS = {
+      'planet': {
+        min_dist: function() {
+          return -1;
+        },
+        render: function(x, y, alpha) {
+          return current_planet.render(4 / current_planet.radius, Math.round(x), Math.round(y), current_planet.dirx, current_planet.diry);
+        }
+      },
+      'stations': {
+        min_dist: function() {
+          return -1;
+        }
+      }
+    };
+    Radar = (function() {
+
+      Radar.prototype.group = 'radar';
+
+      function Radar() {}
+
+      Radar.prototype.blit = function() {
+        var c, d, dx, dy, group, id, item, obj, x, y, _results, _x, _y;
+        c = {
+          x: player.x - cam.x,
+          y: player.y - cam.y
+        };
+        _results = [];
+        for (group in RADAR_ITEMS) {
+          if (!__hasProp.call(RADAR_ITEMS, group)) continue;
+          item = RADAR_ITEMS[group];
+          _results.push((function() {
+            var _ref, _results2;
+            _ref = gbox.getGroup(group);
+            _results2 = [];
+            for (id in _ref) {
+              if (!__hasProp.call(_ref, id)) continue;
+              obj = _ref[id];
+              dx = (obj.x - cam.x) - c.x;
+              dy = (obj.y - cam.y) - c.y;
+              d = Math.sqrt(dx * dx + dy * dy);
+              if (item.min_dist() < 0 || d < item.min_dist()) {
+                _x = c.x + dx;
+                _y = c.y + dy;
+                x = clamp(c.x + dx, 0, cam.w);
+                y = clamp(c.y + dy, 0, cam.h);
+                if (_x === x && _y === y) continue;
+                if (item.render) {
+                  _results2.push(item.render(x, y, 1));
+                } else {
+                  _results2.push(DEFAULT_RADAR_RENDER(x, y, 1));
+                }
+              } else {
+                _results2.push(void 0);
+              }
+            }
+            return _results2;
+          })());
+        }
+        return _results;
+      };
+
+      return Radar;
+
+    })();
     GAME_OVER_MSGS = ['IT\'S OVER', 'GAME IS OVER', 'DERP! You died.', 'Losing is fun.'];
     EQUIPMENT = [
       {
@@ -495,13 +592,19 @@
         attr: 'thrust',
         levels: [
           {
-            price: 1500,
+            price: function() {
+              return 1500;
+            },
             val: 0.045 * 0.33
           }, {
-            price: 10000,
+            price: function() {
+              return 10000;
+            },
             val: 0.045 * 0.66
           }, {
-            price: 40000,
+            price: function() {
+              return 40000;
+            },
             val: 0.045
           }
         ]
@@ -510,13 +613,19 @@
         attr: 'wpower',
         levels: [
           {
-            price: 1000,
+            price: function() {
+              return 1000;
+            },
             val: 0.5
           }, {
-            price: 5000,
+            price: function() {
+              return 5000;
+            },
             val: 1
           }, {
-            price: 20000,
+            price: function() {
+              return 20000;
+            },
             val: 2
           }
         ]
@@ -525,13 +634,19 @@
         attr: 'wcharge_rate',
         levels: [
           {
-            price: 10000,
+            price: function() {
+              return 10000;
+            },
             val: 0.025
           }, {
-            price: 20000,
+            price: function() {
+              return 20000;
+            },
             val: 0.07
           }, {
-            price: 60000,
+            price: function() {
+              return 60000;
+            },
             val: 0.3
           }
         ]
@@ -540,13 +655,19 @@
         attr: 'afterburn',
         levels: [
           {
-            price: 2000,
+            price: function() {
+              return 2000;
+            },
             val: 0.005
           }, {
-            price: 15000,
+            price: function() {
+              return 15000;
+            },
             val: 0.01
           }, {
-            price: 60000,
+            price: function() {
+              return 60000;
+            },
             val: 0.03
           }
         ]
@@ -555,19 +676,27 @@
         attr: 'afterburn',
         levels: [
           {
-            price: 2000,
+            price: function() {
+              return 2000;
+            },
             val: 3
           }, {
-            price: 25000,
+            price: function() {
+              return 25000;
+            },
             val: 10
           }, {
-            price: 90000,
+            price: function() {
+              return 90000;
+            },
             val: 25
           }
         ]
       }, {
         name: 'Repair Shields',
-        price: 250,
+        price: function() {
+          return (player.shields_max - player.shields) * 100;
+        },
         apply: function() {
           return player.shields = player.shields_max;
         }
@@ -1081,7 +1210,7 @@
         while (i < 300) {
           star = choose(this.stars);
           arr = this.known_itg_stations;
-          planet = rand(0, star.pcount);
+          planet = rand(0, star.pcount - 1);
           if (star.pirate > star.itg) {
             arr = this.known_pirate_stations;
             star.known_pirate_station = planet;
@@ -1190,13 +1319,13 @@
             });
             gbox.blitTile(c, {
               tileset: 'cursors',
-              tile: 0,
+              tile: 1,
               dx: Math.round(this.current_star.x) - 4,
               dy: Math.round(this.current_star.y) - 4
             });
             gbox.blitTile(c, {
               tileset: 'cursors',
-              tile: 1,
+              tile: 0,
               dx: Math.round(this.cursor.x) - 4,
               dy: Math.round(this.cursor.y) - 4
             });
@@ -1206,7 +1335,7 @@
               dx: Math.round(this.closest_star.x) - 4,
               dy: Math.round(this.closest_star.y) - 4
             });
-            circle(c, '#d97777', Math.round(this.current_star.x), Math.round(this.current_star.y), player.fuel() / LY_SCALE);
+            circle(c, 'yellow', Math.round(this.current_star.x), Math.round(this.current_star.y), player.fuel() / LY_SCALE);
           }
           _ref3 = player.missions;
           _results = [];
@@ -1215,7 +1344,7 @@
             if (m.location) {
               _results.push(gbox.blitTile(c, {
                 tileset: 'cursors',
-                tile: 5,
+                tile: 3,
                 dx: Math.round(m.location.star.x) - 4,
                 dy: Math.round(m.location.star.y) - 4
               }));
@@ -1295,6 +1424,7 @@
         this.star = star;
         this.pid = pid;
         this.num = num;
+        console.log(itg);
         this._x = 0;
         this._y = 0;
         this.star = star;
@@ -1341,7 +1471,7 @@
         this.pirate_station = null;
         itg_station_prob = cls.station_prob * this.star.itg + MIN_ITG_STATION_PROB;
         pirate_station_prob = cls.station_prob * this.star.pirate + MIN_PIRATE_STATION_PROB;
-        if (itg === this.num || Math.random() < itg_station_prob) {
+        if ((itg === this.num) || Math.random() < itg_station_prob) {
           r = MIN_STATION_DIST + this.radius * 2;
           ang = Math.random() * 2 * Math.PI;
           x = this._x + r * Math.cos(ang);
@@ -1349,7 +1479,7 @@
           this.itg_station = new Station(this, 'itg', x, y);
           this.itg_station.new_missions();
         }
-        if (pirate === this.num || Math.random() < pirate_station_prob) {
+        if ((pirate === this.num) || Math.random() < pirate_station_prob) {
           r = MIN_STATION_DIST + this.radius * 4;
           ang = Math.random() * 2 * Math.PI;
           x = this._x + r * Math.cos(ang);
@@ -1465,7 +1595,8 @@
           x = W * 0.1 + (W * 0.8) * ((p + 1) / this.star.planets.length);
           planet.cursorpos = {
             x: x,
-            y: y
+            y: y,
+            r: planet.radius * 0.25
           };
           this.positions[p].push(planet.cursorpos);
           m = 0;
@@ -1474,7 +1605,8 @@
             moon = _ref2[_j];
             moon.cursorpos = {
               x: x,
-              y: y + (planet.radius * 0.5 + (m + 1) * PLANET_CLASSES.moon.max_radius) * 0.5
+              y: y + (planet.radius * 0.5 + (m + 1) * PLANET_CLASSES.moon.max_radius) * 0.5,
+              r: moon.radius * 0.25
             };
             this.positions[p].push(moon.cursorpos);
             ++m;
@@ -1531,7 +1663,7 @@
       };
 
       Planetmap.prototype.blit = function() {
-        var c, m, moon, p, planet, x, y, _i, _j, _k, _l, _len, _len2, _len3, _len4, _ref, _ref2, _ref3, _ref4, _results;
+        var c, m, moon, p, planet, pos, x, y, _i, _j, _k, _l, _len, _len2, _len3, _len4, _ref, _ref2, _ref3, _ref4;
         c = gbox.getBufferContext();
         if (c) {
           gbox.blitAll(c, gbox.getImage('starmap_gui'), {
@@ -1581,36 +1713,35 @@
             moon.render(0.25, x, y, -moon.radius * 0.5, 0);
             ++m;
           }
-          if (current_planet && current_planet.star === this.star) {
-            gbox.blitTile(c, {
-              tileset: 'cursors',
-              tile: 3,
-              dx: Math.round(current_planet.cursorpos.x),
-              dy: Math.round(current_planet.cursorpos.y) - 4
-            });
-          }
-          gbox.blitTile(c, {
-            tileset: 'cursors',
-            tile: 4,
-            dx: Math.round(this.positions[this.cursor.x][this.cursor.y].x),
-            dy: Math.round(this.positions[this.cursor.x][this.cursor.y].y) - 4
-          });
           _ref4 = player.missions;
-          _results = [];
           for (_l = 0, _len4 = _ref4.length; _l < _len4; _l++) {
             m = _ref4[_l];
             if (m.location && m.location.star === this.star) {
-              _results.push(gbox.blitTile(c, {
+              pos = this.positions[m.location.pnum][0];
+              gbox.blitTile(c, {
                 tileset: 'cursors',
-                tile: 5,
-                dx: Math.round(this.positions[m.location.pnum][0].x) - 4,
-                dy: Math.round(this.positions[m.location.pnum][0].y) - 4
-              }));
-            } else {
-              _results.push(void 0);
+                tile: 6,
+                dx: Math.round(pos.x + pos.r) - 4,
+                dy: Math.round(pos.y) - 4
+              });
             }
           }
-          return _results;
+          pos = this.positions[this.cursor.x][this.cursor.y];
+          gbox.blitTile(c, {
+            tileset: 'cursors',
+            tile: 5,
+            dx: Math.round(pos.x + pos.r) - 4,
+            dy: Math.round(pos.y) - 4
+          });
+          if (current_planet && current_planet.star === this.star) {
+            pos = current_planet.cursorpos;
+            return gbox.blitTile(c, {
+              tileset: 'cursors',
+              tile: 4,
+              dx: Math.round(pos.x + pos.r) - 4,
+              dy: Math.round(pos.y) - 4
+            });
+          }
         }
       };
 
@@ -1633,15 +1764,16 @@
 
       function Person(role, fugitive) {
         this.parts = [];
-        this.parts.push(rand(0, 16));
-        this.parts.push(rand(0, 16));
+        this.parts.push(rand(0, 15));
+        this.parts.push(rand(0, 15));
         if (rand(0, 1)) this.parts.push(this.parts[1]);
         this.role = role;
         this.fugitive = fugitive;
+        this.tick = 0;
       }
 
-      Person.prototype.render = function(x, y, alpha) {
-        this.render_face(x, y, alpha);
+      Person.prototype.render = function(x, y, alpha, talking) {
+        this.render_face(x, y, alpha, talking);
         if (!this.fugitive) return;
         return gbox.blitAll(gbox.getBufferContext(), gbox.getImage('fugitive_icon'), {
           dx: Math.round(x + 17),
@@ -1649,18 +1781,19 @@
         });
       };
 
-      Person.prototype.render_face = function(x, y, alpha) {
-        var n, partNum, _i, _len, _ref, _results;
+      Person.prototype.render_face = function(x, y, alpha, talking) {
+        var n, partNum, yoff, _i, _len, _ref, _results;
         n = 0;
         _ref = this.parts;
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           partNum = _ref[_i];
+          yoff = 0;
           gbox.blitTile(gbox.getBufferContext(), {
             tileset: 'peoples_tiles',
             tile: n * 16 + partNum,
             dx: Math.round(x),
-            dy: Math.round(y)
+            dy: Math.round(y + yoff)
           });
           _results.push(++n);
         }
@@ -1794,22 +1927,24 @@
       TaxiMission.prototype.type = 'taxi';
 
       function TaxiMission(person) {
+        var station;
         this.person = person;
         TaxiMission.__super__.constructor.call(this, this.person);
         this.price = RESOURCES.fuel.mean_price * 1.25;
         if (this.person.fugitive) {
           this.price *= FUGITIVE_TAXI_BONUS;
           this.loc_name = 'Pirate st.';
-          this.star = (choose(starmap.known_pirate_stations)).star;
+          station = choose(starmap.known_pirate_stations);
         } else {
           this.loc_name = 'ITG st.';
-          this.star = (choose(starmap.known_itg_stations)).star;
+          station = choose(starmap.known_itg_stations);
         }
+        this.star = station.star;
         this.price *= starmap.current_star.distance_to(this.star);
         this.price = Math.round(this.price * 100) / 100;
         this.location = {
           star: this.star,
-          pnum: rand(0, this.star.pcount - 1)
+          pnum: station.planet
         };
       }
 
@@ -1913,8 +2048,15 @@
           if (!__hasProp.call(RESOURCES, name)) continue;
           res = RESOURCES[name];
           this.cargo[name] = [];
-          resource_wealth = res[this.planet.ptype + '_prob'];
-          count = 2 * Math.round(frand(0, resource_wealth * max_resource_count));
+          resource_wealth = 0;
+          count = 0;
+          if (res.natural) {
+            resource_wealth = res[this.planet.ptype + '_prob'];
+            count = 2 * Math.round(frand(0, resource_wealth * max_resource_count));
+          } else {
+            resource_wealth = frand(0, 1);
+            count = 50 * frand(0, this.planet.star.itg + this.planet.star.pirate);
+          }
           c = 0;
           _results.push((function() {
             var _results2;
@@ -2004,30 +2146,31 @@
       Equipment.prototype.a = function() {
         var lvl;
         if (this.eq.price) {
-          if (player.funds < this.eq.price) {
+          if (player.funds < this.eq.price()) {
             message.set('Insufficient funds.', 120);
             return;
           }
           this.eq.apply();
+          return;
         }
         lvl = player.equipment[this.eq.name];
         if (lvl >= 2) return;
-        if (player.funds < this.eq.levels[lvl + 1].price) {
+        if (player.funds < this.eq.levels[lvl + 1].price()) {
           message.set('Insufficient funds.', 120);
           return;
         }
-        player.funds -= this.eq.levels[lvl + 1].price;
+        player.funds -= this.eq.levels[lvl + 1].price();
         player[this.eq.attr] = this.eq.levels[lvl + 1].val;
         return ++player.equipment[this.eq.name];
       };
 
       Equipment.prototype.text = function() {
         var lvl, lvl_vis;
-        if (this.eq.price) return this.eq.name + ' $' + this.eq.price;
+        if (this.eq.price) return this.eq.name + ' $' + this.eq.price();
         lvl = player.equipment[this.eq.name];
         lvl_vis = lvl + 2;
         if (lvl_vis >= 4) return this.eq.name + ' v3.0 - MAX';
-        return this.eq.name + ' v' + lvl_vis + '.0 $' + this.eq.levels[lvl + 1].price;
+        return this.eq.name + ' v' + lvl_vis + '.0 $' + this.eq.levels[lvl + 1].price();
       };
 
       return Equipment;
@@ -2255,6 +2398,7 @@
     RESOURCES = {
       'scrap metal': {
         num: 0,
+        natural: true,
         tons_per_unit: 1,
         gas_giant_prob: 0.1,
         rocky_prob: 0.5,
@@ -2266,6 +2410,7 @@
       },
       'lifeforms': {
         num: 1,
+        natural: true,
         tons_per_unit: 0.05,
         gas_giant_prob: 0.05,
         rocky_prob: 0.2,
@@ -2277,6 +2422,7 @@
       },
       'fuel': {
         num: 2,
+        natural: true,
         tons_per_unit: 0.25,
         gas_giant_prob: 0.25,
         rocky_prob: 0.1,
@@ -2288,6 +2434,7 @@
       },
       'minerals': {
         num: 3,
+        natural: true,
         tons_per_unit: 0.5,
         gas_giant_prob: 0.05,
         rocky_prob: 0.5,
@@ -2299,6 +2446,7 @@
       },
       'narcotics': {
         num: 4,
+        natural: false,
         tons_per_unit: 0.01,
         gas_giant_prob: 0,
         rocky_prob: 0,
@@ -2394,7 +2542,7 @@
 
     })();
     main = function() {
-      gbox.setGroups(['background', 'game', 'starmap', 'planetmap', 'stationscreen', 'planet', 'stations', 'resources', 'particles', 'player', 'friend_shots', 'baddies', 'drones', 'foe_shots', 'message', 'pause']);
+      gbox.setGroups(['background', 'game', 'starmap', 'planetmap', 'stationscreen', 'planet', 'stations', 'resources', 'particles', 'player', 'friend_shots', 'baddies', 'drones', 'foe_shots', 'radar', 'message', 'pause']);
       loadColors();
       maingame = gamecycle.createMaingame('game', 'game');
       maingame.gameMenu = function() {
@@ -2431,13 +2579,6 @@
         gbox.addObject(message);
         gbox.addObject(starmap);
         cam = addCamera();
-        gbox.addObject({
-          group: 'game',
-          tick: 0,
-          first: function() {
-            if (++this.tick % 60 === 0) return console.log(player.missions);
-          }
-        });
         return gbox.addObject({
           id: 'bg_id',
           group: 'background',
