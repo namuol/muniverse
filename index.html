@@ -1,5 +1,5 @@
 <html><head><script type="text/javascript" src="akihabara/gbox.js"></script><script type="text/javascript" src="akihabara/iphopad.js"></script><script type="text/javascript" src="akihabara/trigo.js"></script><script type="text/javascript" src="akihabara/toys.js"></script><script type="text/javascript" src="akihabara/help.js"></script><script type="text/javascript" src="akihabara/tool.js"></script><script type="text/javascript" src="akihabara/gamecycle.js"></script><script type="text/javascript" src="seedrandom-min.js"></script><link rel="stylesheet" href="style.css" /><meta name="viewport" content="width:device-width; initial-scale:1.0; maximum-scale:1.0; user-scalable:0;" /></head><body><div class="directions"></div><canvas width="327" height="1" style="display:none" id="starcolors"></canvas><canvas width="16" height="3" style="display:none" id="planetcolors"></canvas><canvas width="320" height="320" style="display:none" id="starmap"></canvas></body><script>var __slice = Array.prototype.slice;var __hasProp = Object.prototype.hasOwnProperty;var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };var __extends = function(child, parent) {  for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }  function ctor() { this.constructor = child; }  ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype;  return child; };var __indexOf = Array.prototype.indexOf || function(item) {  for (var i = 0, l = this.length; i < l; i++) {    if (this[i] === item) return i;  } return -1; };(function () {
-    var BASE_SEED, BASE_SHIELDS, BASE_THRUST, BASE_WCHARGE_CAP, BASE_WCHARGE_RATE, BASE_WPOWER, BASE_WSPAN, BASE_WSPEED, CabinDweller, CrewMission, DOCKING_DURATION, GAS_GIANT_MIN_ORBIT, H, LY_SCALE, MAX_ITG_REGIONS, MAX_ITG_REGION_RADIUS, MAX_PIRATE_REGIONS, MAX_PIRATE_REGION_RADIUS, MAX_STAR_COUNT, MAX_STAR_PLANETS, MAX_STAR_RAD, MIN_ITG_REGION_RADIUS, MIN_ITG_STATION_PROB, MIN_PIRATE_REGION_RADIUS, MIN_PIRATE_STATION_PROB, MIN_STAR_COUNT, MIN_STAR_RAD, MIN_STATION_DIST, Menu, MenuItem, Mission, PARTICLES, PLANET_CLASSES, Person, Planet, Planetmap, Player, RESOURCES, Resource, STATIONS, STATION_SUB_SCREENS, Star, Starmap, Station, StationScreen, TURN_SPEED, TaxiMission, W, addBaddie, addCamera, addDrone, addParticle, addShot, cam, choose, circle, current_planet, flightMode, frand, getPixel, groupCollides, loadColors, loadResources, main, maingame, planetcolors, planetmapMode, player, rand, rgba, setPixel, starcolors, starmap, starmapMode, stationMode;
+    var ABANDON_MESSAGES, ACCEPT_MESSAGES, BASE_AFTERBURN, BASE_CARGO_CAP, BASE_SEED, BASE_SHIELDS, BASE_THRUST, BASE_WCHARGE_CAP, BASE_WCHARGE_RATE, BASE_WPOWER, BASE_WSPAN, BASE_WSPEED, CabinDweller, CargoItem, CrewMission, DOCKING_DURATION, EQUIPMENT, Equipment, FAILURE_MESSAGES, FUGITIVE_TAXI_BONUS, GAME_OVER_MSGS, GAS_GIANT_MIN_ORBIT, H, ITG_INSPECT_PROB, LY_SCALE, MAX_ITG_REGIONS, MAX_ITG_REGION_RADIUS, MAX_PIRATE_REGIONS, MAX_PIRATE_REGION_RADIUS, MAX_STAR_COUNT, MAX_STAR_PLANETS, MAX_STAR_RAD, MIN_ITG_REGIONS, MIN_ITG_REGION_RADIUS, MIN_ITG_STATION_PROB, MIN_PIRATE_REGIONS, MIN_PIRATE_REGION_RADIUS, MIN_PIRATE_STATION_PROB, MIN_STAR_COUNT, MIN_STAR_RAD, MIN_STATION_DIST, Menu, MenuItem, Message, Mission, NO_CABINS_MESSAGES, PARTICLES, PLANET_CLASSES, Person, Planet, Planetmap, Player, RESOURCES, Resource, ResourceExchanger, STATIONS, STATION_SUB_SCREENS, SUCCESS_MESSAGES, Star, Starmap, Station, StationScreen, TURN_SPEED, TaxiMission, W, addBaddie, addCamera, addDrone, addParticle, addShot, cam, choose, circle, current_planet, date, flightMode, frand, gaus, getPixel, groupCollides, loadColors, loadResources, main, maingame, message, planetcolors, planetmapMode, player, rand, rgba, setPixel, starcolors, starmap, starmapMode, stationMode;
     BASE_SEED = 'WEEEEE';
     Math.seedrandom(BASE_SEED);
     window.clamp = function(num, min, max) {
@@ -10,6 +10,11 @@
     };
     rand = function(min, max) {
       return Math.round(frand(min, max));
+    };
+    gaus = function(mean, stdv) {
+      var rnd;
+      rnd = (Math.random() * 2 - 1) + (Math.random() * 2 - 1) + (Math.random() * 2 - 1);
+      return rnd * stdv + mean;
     };
     choose = function(array) {
       return array[rand(0, array.length - 1)];
@@ -147,6 +152,7 @@
         gapx: 0,
         gapy: 0
       });
+      gbox.addImage('fugitive_icon', 'fugitive_icon.png');
       gbox.addImage('peoples', 'peoples.png');
       gbox.addTiles({
         id: 'peoples_tiles',
@@ -248,11 +254,18 @@
       return player.skip = true;
     };
     flightMode = function(reset) {
-      var g, groups, stopGroups, _i, _j, _len, _len2;
+      var baddy_count, g, groups, i, stopGroups, _i, _j, _len, _len2;
       if (reset) {
         gbox.clearGroup('friend_shots');
         gbox.clearGroup('foe_shots');
         gbox.clearGroup('particles');
+        gbox.clearGroup('baddies');
+        baddy_count = rand(0, 6);
+        i = 0;
+        while (i < baddy_count) {
+          addBaddie();
+          ++i;
+        }
       }
       gbox.clearGroup('planet');
       gbox.clearGroup('resources');
@@ -281,7 +294,65 @@
       x: 0,
       y: 0
     };
+    Message = (function() {
+
+      Message.prototype.group = 'message';
+
+      function Message() {
+        this.visible = false;
+        this.msgs = [];
+      }
+
+      Message.prototype.add = function(str, lifespan, person) {
+        if (lifespan == null) lifespan = 240;
+        this.msgs.push({
+          str: str,
+          lifespan: lifespan,
+          person: person
+        });
+        return this.visible = true;
+      };
+
+      Message.prototype.set = function(str, lifespan, person) {
+        if (lifespan == null) lifespan = 240;
+        this.msgs = [];
+        return this.add(str, lifespan, person);
+      };
+
+      Message.prototype.first = function() {
+        if (!this.visible) return;
+        if (this.msgs[0].lifespan !== void 0) {
+          if (--this.msgs[0].lifespan < 0) {
+            this.msgs.splice(0, 1);
+            if (this.msgs.length === 0) return this.visible = false;
+          }
+        }
+      };
+
+      Message.prototype.blit = function(x, y) {
+        if (!this.visible) return;
+        if (this.msgs[0].person) this.msgs[0].person.render_face(1, 1);
+        return gbox.blitText(gbox.getBufferContext(), {
+          font: 'small',
+          text: this.msgs[0].str,
+          dx: 17,
+          dy: 5,
+          dw: W,
+          dh: 16,
+          halign: gbox.ALIGN_LEFT,
+          valign: gbox.ALIGN_TOP
+        });
+      };
+
+      return Message;
+
+    })();
+    message = new Message;
     Menu = (function() {
+
+      Menu.prototype._held = function(key) {
+        return gbox.keyIsHit(key) || (gbox.keyIsHeldForAtLeast(key, 15) && gbox.keyHeldTime(key) % 5 === 0);
+      };
 
       function Menu() {
         this.selected = 0;
@@ -324,12 +395,12 @@
       };
 
       Menu.prototype.update = function() {
-        if (gbox.keyIsHit('a')) this.a();
-        if (gbox.keyIsHit('b')) this.b();
-        if (gbox.keyIsHit('c')) this.c();
-        if (gbox.keyIsHit('up')) {
+        if (this._held('a')) this.a();
+        if (this._held('b')) this.b();
+        if (this._held('c')) this.c();
+        if (this._held('up')) {
           return this.up();
-        } else if (gbox.keyIsHit('down')) {
+        } else if (this._held('down')) {
           return this.down();
         }
       };
@@ -414,18 +485,111 @@
         }
       });
     };
-    BASE_THRUST = 0.025;
+    GAME_OVER_MSGS = ['IT\'S OVER', 'GAME IS OVER', 'DERP! You died.', 'Losing is fun.'];
+    EQUIPMENT = [
+      {
+        name: 'Thruster',
+        attr: 'thrust',
+        levels: [
+          {
+            price: 1500,
+            val: 0.045 * 0.33
+          }, {
+            price: 10000,
+            val: 0.045 * 0.66
+          }, {
+            price: 40000,
+            val: 0.045
+          }
+        ]
+      }, {
+        name: 'Plasma Cannon',
+        attr: 'wpower',
+        levels: [
+          {
+            price: 1000,
+            val: 0.5
+          }, {
+            price: 5000,
+            val: 1
+          }, {
+            price: 20000,
+            val: 2
+          }
+        ]
+      }, {
+        name: 'Weapon Charger',
+        attr: 'wcharge_rate',
+        levels: [
+          {
+            price: 10000,
+            val: 0.025
+          }, {
+            price: 20000,
+            val: 0.1
+          }, {
+            price: 60000,
+            val: 0.3
+          }
+        ]
+      }, {
+        name: 'Afterburner',
+        attr: 'afterburn',
+        levels: [
+          {
+            price: 2000,
+            val: 0.005
+          }, {
+            price: 15000,
+            val: 0.01
+          }, {
+            price: 60000,
+            val: 0.03
+          }
+        ]
+      }, {
+        name: 'Shields',
+        attr: 'afterburn',
+        levels: [
+          {
+            price: 2000,
+            val: 3
+          }, {
+            price: 25000,
+            val: 10
+          }, {
+            price: 90000,
+            val: 25
+          }
+        ]
+      }, {
+        name: 'Repair Shields',
+        price: 250,
+        apply: function() {
+          return player.shields = player.shields_max;
+        }
+      }
+    ];
+    BASE_THRUST = EQUIPMENT[0].levels[0].val;
     BASE_SHIELDS = 3;
-    BASE_WCHARGE_RATE = 0.05;
+    BASE_WCHARGE_RATE = EQUIPMENT[2].levels[0].val;
     BASE_WCHARGE_CAP = 2;
     BASE_WSPEED = 2;
-    BASE_WPOWER = 1;
+    BASE_WPOWER = EQUIPMENT[1].levels[0].val;
     BASE_WSPAN = 80;
     TURN_SPEED = 0.1;
+    BASE_CARGO_CAP = 5;
+    BASE_AFTERBURN = EQUIPMENT[3].levels[0].val;
     player = void 0;
+    date = 0;
     Player = (function() {
 
       function Player(name) {
+        var eq, _i, _len;
+        this.alive = true;
+        this.missions = [];
+        this.funds = 500;
+        this.cabins = [];
         this.available_cabins = 3;
         this.wcharge_cap = BASE_WCHARGE_CAP;
         this.wcharge_rate = BASE_WCHARGE_RATE;
@@ -434,16 +598,35 @@
         this.wpower = BASE_WPOWER;
         this.wspan = BASE_WSPAN;
         this.thrust = BASE_THRUST;
-        this.afterburn = 0.025;
-        this.shields = BASE_SHIELDS;
+        this.afterburn = BASE_AFTERBURN;
+        this.shields_max = BASE_SHIELDS;
+        this.shields = this.shields_max;
+        this.itg_inspect_mod = 1;
         this.cargo = {
-          fuel: 4
+          fuel: [1, 2, 3, 4],
+          narcotics: ['teehee', 2]
         };
+        this.equipment = {};
+        for (_i = 0, _len = EQUIPMENT.length; _i < _len; _i++) {
+          eq = EQUIPMENT[_i];
+          if (!eq.no_default) this.equipment[eq.name] = 0;
+        }
         this.init();
       }
 
+      Player.prototype.burn_fuel = function(dist) {
+        var _results;
+        dist = Math.round(dist);
+        _results = [];
+        while (dist > 0) {
+          this.cargo.fuel.pop();
+          _results.push(--dist);
+        }
+        return _results;
+      };
+
       Player.prototype.fuel = function() {
-        return this.cargo.fuel;
+        return this.cargo.fuel.length;
       };
 
       Player.prototype.id = 'player_id';
@@ -522,6 +705,7 @@
             ++i;
           }
           _this.shields -= shot.power;
+          if (_this.shields <= 0) _this.die();
           return shot.die();
         });
         if (!going) {
@@ -540,6 +724,25 @@
         });
       };
 
+      Player.prototype.die = function() {
+        var i, _results;
+        this.alive = false;
+        gbox.trashObject(this);
+        message.set(choose(GAME_OVER_MSGS));
+        i = 0;
+        while (i < 20) {
+          addParticle('fire', this.x + this.w / 2, this.y + this.h / 2, this.vx + frand(-1, 1), this.vy + frand(-1, 1));
+          ++i;
+        }
+        i = 0;
+        _results = [];
+        while (i < 12) {
+          addParticle('wreckage', this.x + this.w / 2, this.y + this.h / 2, this.vx + frand(-0.5, 0.5), this.vy + frand(-.5, .5));
+          _results.push(++i);
+        }
+        return _results;
+      };
+
       return Player;
 
     })();
@@ -552,8 +755,8 @@
           this.image = gbox.getImage('bad' + this.num);
           this.w = 8;
           this.h = 8;
-          this.x = Math.random() * gbox.getScreenW();
-          this.y = Math.random() * gbox.getScreenH();
+          this.x = Math.random() * gbox.getScreenW() * 3;
+          this.y = Math.random() * gbox.getScreenH() * 3;
           this.vx = 0;
           this.vy = 0;
           this.wcharge_cap = 50;
@@ -568,7 +771,7 @@
           this.tsy = 0;
           this.attack_dist = 90;
           this.orbit_radius = 60;
-          this.hostile = true;
+          this.hostile = Math.random() < (0.25 + current_planet.star.pirate - current_planet.star.itg);
           this.ang = 0;
           this.thrust = 0.006;
           this.afterburn = 0.005;
@@ -579,15 +782,18 @@
         first: function() {
           var ax, ay, d, dx, dy, len, xoff, yoff,
             _this = this;
+          if (!player.alive) this.hostile = false;
           if (this.hostile) {
             dx = player.x - this.x;
             dy = player.y - this.y;
             d = Math.sqrt(dx * dx + dy * dy);
-            if (this.wcharge >= this.wcost && d < this.attack_dist) {
-              this.tsx = player.x + player.vx + this.vx;
-              this.tsy = player.y + player.vy + this.vy;
-              this.wcharge -= this.wcost;
-              addShot(this.x + this.w / 2, this.y + this.h / 2, this.tsx, this.tsy, this.wpower, this.wspeed, 1, 'foe_shots', this.wspan, this.vx, this.vy);
+            if (d < W) {
+              if (this.wcharge >= this.wcost && d < this.attack_dist) {
+                this.tsx = player.x + player.vx + this.vx;
+                this.tsy = player.y + player.vy + this.vy;
+                this.wcharge -= this.wcost;
+                addShot(this.x + this.w / 2, this.y + this.h / 2, this.tsx, this.tsy, this.wpower, this.wspeed, 1, 'foe_shots', this.wspan, this.vx, this.vy);
+              }
             }
             this.ang += 0.005;
             xoff = Math.cos(this.ang);
@@ -616,6 +822,7 @@
           if (this.wcharge < this.wcharge_cap) this.wcharge += 1;
           return groupCollides(this, 'friend_shots', function(shot) {
             var i;
+            _this.hostile = true;
             _this.shields -= shot.power;
             i = 0;
             while (i < 3) {
@@ -752,14 +959,23 @@
     MAX_STAR_PLANETS = 15;
     Star = (function() {
 
-      function Star(sector, x, y, color, itg, piracy) {
+      Star.prototype.distance_to = function(other) {
+        var dx, dy;
+        dx = other.x - this.x;
+        dy = other.y - this.y;
+        return LY_SCALE * Math.sqrt(dx * dx + dy * dy);
+      };
+
+      function Star(sector, num, x, y, color, itg, pirate) {
         this.sector = sector;
+        this.num = num;
         this.x = x;
         this.y = y;
         this.color = color;
-        this.pcount = rand(1, MAX_STAR_PLANETS);
         this.itg = itg;
-        this.pirate = piracy;
+        this.pirate = pirate;
+        this.pcount = rand(1, MAX_STAR_PLANETS);
+        this.sid = "S-" + this.num + "." + (Math.round(this.x)) + "." + (Math.round(this.y));
       }
 
       Star.prototype.generate_planets = function() {
@@ -770,7 +986,7 @@
         p = 0;
         _results = [];
         while (p < this.pcount) {
-          this.planets.push(new Planet(this, p, false));
+          this.planets.push(new Planet(this, "" + this.sid + ".P-" + p, p, false, this.known_itg_station, this.known_pirate_station));
           _results.push(++p);
         }
         return _results;
@@ -791,18 +1007,20 @@
       return Star;
 
     })();
+    MIN_ITG_REGIONS = 1;
     MAX_ITG_REGIONS = 3;
     MIN_ITG_REGION_RADIUS = 10;
-    MAX_ITG_REGION_RADIUS = 50;
-    MAX_PIRATE_REGIONS = 3;
+    MAX_ITG_REGION_RADIUS = 60;
+    MIN_PIRATE_REGIONS = 1;
+    MAX_PIRATE_REGIONS = 5;
     MIN_PIRATE_REGION_RADIUS = 10;
-    MAX_PIRATE_REGION_RADIUS = 50;
+    MAX_PIRATE_REGION_RADIUS = 30;
     LY_SCALE = 0.25;
     starmap = void 0;
     Starmap = (function() {
 
       function Starmap(x, y, density) {
-        var c, color, count, el, i, radius, star, starcount;
+        var arr, c, color, count, el, i, planet, radius, star, starcount;
         this.skip = false;
         this.sector = {
           x: x,
@@ -815,7 +1033,7 @@
         Math.seedrandom(BASE_SEED + x + ',' + y);
         this.itg_regions = [];
         i = 0;
-        count = rand(0, MAX_ITG_REGIONS);
+        count = rand(MIN_ITG_REGIONS, MAX_ITG_REGIONS);
         while (i < count) {
           radius = frand(MIN_ITG_REGION_RADIUS, MAX_ITG_REGION_RADIUS);
           this.itg_regions.push({
@@ -827,10 +1045,10 @@
         }
         this.pirate_regions = [];
         i = 0;
-        count = rand(0, MAX_PIRATE_REGIONS);
+        count = rand(MIN_PIRATE_REGIONS, MAX_PIRATE_REGIONS);
         while (i < count) {
           radius = frand(MIN_PIRATE_REGION_RADIUS, MAX_PIRATE_REGION_RADIUS);
-          this.itg_regions.push({
+          this.pirate_regions.push({
             x: rand(radius, W - radius),
             y: rand(radius, H - radius - 16),
             radius: radius
@@ -848,13 +1066,31 @@
           color = choose(starcolors);
           x = frand(1, W - 1);
           y = frand(1, H - 16 - 1);
-          star = new Star(this.sector, x, y, color, this.itg_factor(x, y), this.pirate_factor(x, y));
-          star.sid = i;
+          star = new Star(this.sector, i, x, y, color, this.itg_factor(x, y), this.pirate_factor(x, y));
           this.stars.push(star);
           setPixel(this.starmap, Math.round(x), Math.round(y), color[0], color[1], color[2], color[3]);
           ++i;
         }
         c.putImageData(this.starmap, 0, 0);
+        this.known_itg_stations = [];
+        this.known_pirate_stations = [];
+        i = 0;
+        while (i < 300) {
+          star = choose(this.stars);
+          arr = this.known_itg_stations;
+          planet = rand(0, star.pcount);
+          if (star.pirate > star.itg) {
+            arr = this.known_pirate_stations;
+            star.known_pirate_station = planet;
+          } else {
+            star.known_itg_station = planet;
+          }
+          arr.push({
+            star: star,
+            planet: planet
+          });
+          ++i;
+        }
       }
 
       Starmap.prototype._factor = function(x, y, pirate) {
@@ -903,13 +1139,19 @@
           this.cursor.x += 0.5;
         }
         if (this.closest_star && gbox.keyIsHit('a')) {
-          gbox.clearGroup('planetmap');
-          this.closest_star.generate_planets();
-          window.planetmap = new Planetmap(this.closest_star);
-          window.planetmap.skip = true;
-          gbox.addObject(planetmap);
-          planetmapMode();
-          return;
+          if (player.fuel() >= this.closest_star.dist) {
+            console.log('DIST: ' + this.closest_star.dist);
+            console.log('FUEL: ' + player.fuel() / LY_SCALE);
+            gbox.clearGroup('planetmap');
+            this.closest_star.generate_planets();
+            window.planetmap = new Planetmap(this.closest_star);
+            window.planetmap.skip = true;
+            gbox.addObject(planetmap);
+            planetmapMode();
+            return;
+          } else {
+            message.set('Insufficient fuel.', 90);
+          }
         }
         if (current_planet && gbox.keyIsHit('c')) flightMode();
         if (!this.closest_star || this.cursor.x !== x || this.cursor.y !== y) {
@@ -921,7 +1163,7 @@
       };
 
       Starmap.prototype.blit = function() {
-        var c, r, _i, _j, _len, _len2, _ref, _ref2;
+        var c, m, r, _i, _j, _k, _len, _len2, _len3, _ref, _ref2, _ref3, _results;
         c = gbox.getBufferContext();
         if (c) {
           c.putImageData(this.starmap, 0, 0);
@@ -962,8 +1204,24 @@
               dx: Math.round(this.closest_star.x) - 4,
               dy: Math.round(this.closest_star.y) - 4
             });
-            return circle(c, '#d97777', Math.round(this.current_star.x), Math.round(this.current_star.y), player.fuel() / LY_SCALE);
+            circle(c, '#d97777', Math.round(this.current_star.x), Math.round(this.current_star.y), player.fuel() / LY_SCALE);
           }
+          _ref3 = player.missions;
+          _results = [];
+          for (_k = 0, _len3 = _ref3.length; _k < _len3; _k++) {
+            m = _ref3[_k];
+            if (m.location) {
+              _results.push(gbox.blitTile(c, {
+                tileset: 'cursors',
+                tile: 5,
+                dx: Math.round(m.location.star.x) - 4,
+                dy: Math.round(m.location.star.y) - 4
+              }));
+            } else {
+              _results.push(void 0);
+            }
+          }
+          return _results;
         }
       };
 
@@ -1030,8 +1288,11 @@
     MIN_STATION_DIST = 100;
     Planet = (function() {
 
-      function Planet(star, num, moon) {
-        var ang, c, cls, count, itg_station_prob, m, max_resource_count, mcount, name, pirate_station_prob, r, res, x, y;
+      function Planet(star, pid, num, moon, itg, pirate) {
+        var ang, c, cls, count, itg_station_prob, letters, m, max_resource_count, mcount, name, pirate_station_prob, r, res, resource_wealth, x, y;
+        this.star = star;
+        this.pid = pid;
+        this.num = num;
         this._x = 0;
         this._y = 0;
         this.star = star;
@@ -1052,15 +1313,22 @@
         this.wealth = Math.random();
         max_resource_count = ((Math.PI * this.radius * this.radius) / 50) * this.wealth;
         this.resources = {};
+        this.prices = {};
         for (name in RESOURCES) {
           if (!__hasProp.call(RESOURCES, name)) continue;
           res = RESOURCES[name];
           this.resources[name] = [];
-          count = Math.round(frand(0, res[this.ptype + '_prob']) * max_resource_count);
+          this.prices[name] = gaus(res.mean_price, res.price_stdv);
+          if (res.pirate_mod_min) {
+            this.prices[name] *= frand(res.pirate_mod_min, res.pirate_mod_max);
+          }
+          this.prices[name] = Math.max(1, this.prices[name]);
+          resource_wealth = res[this.ptype + '_prob'];
+          count = Math.round(frand(0, resource_wealth * max_resource_count));
           c = 0;
           while (c < count) {
             ang = Math.PI * 2 * Math.random();
-            r = this.radius * Math.random();
+            r = this.radius * frand(res.min_dist, res.max_dist);
             x = r * Math.cos(ang);
             y = r * Math.sin(ang);
             this.resources[name].push(new Resource(name, x, y, 0, 0, this));
@@ -1071,7 +1339,7 @@
         this.pirate_station = null;
         itg_station_prob = cls.station_prob * this.star.itg + MIN_ITG_STATION_PROB;
         pirate_station_prob = cls.station_prob * this.star.pirate + MIN_PIRATE_STATION_PROB;
-        if (Math.random() < itg_station_prob) {
+        if (itg === this.num || Math.random() < itg_station_prob) {
           r = MIN_STATION_DIST + this.radius * 2;
           ang = Math.random() * 2 * Math.PI;
           x = this._x + r * Math.cos(ang);
@@ -1079,7 +1347,7 @@
           this.itg_station = new Station(this, 'itg', x, y);
           this.itg_station.new_missions();
         }
-        if (Math.random() < pirate_station_prob) {
+        if (pirate === this.num || Math.random() < pirate_station_prob) {
           r = MIN_STATION_DIST + this.radius * 4;
           ang = Math.random() * 2 * Math.PI;
           x = this._x + r * Math.cos(ang);
@@ -1090,9 +1358,10 @@
         this.moons = [];
         if (moon) return;
         mcount = Math.round(rand(cls.min_moons, cls.max_moons) * (this.radius / 120));
+        letters = 'abcdefghijklmnopqrstuvqxyz';
         m = 0;
         while (m < mcount) {
-          this.moons.push(new Planet(star, 0, true));
+          this.moons.push(new Planet(this.star, this.pid + letters[m], m, true));
           ++m;
         }
         this.init();
@@ -1211,6 +1480,7 @@
       }
 
       Planetmap.prototype.first = function() {
+        var new_planet;
         if (this.skip) {
           this.skip = false;
           return;
@@ -1220,18 +1490,22 @@
           return;
         }
         if (gbox.keyIsHit('a')) {
+          new_planet = void 0;
           if (this.cursor.y) {
-            current_planet = this.star.planets[this.cursor.x].moons[this.cursor.y - 1];
+            new_planet = this.star.planets[this.cursor.x].moons[this.cursor.y - 1];
           } else {
-            current_planet = this.star.planets[this.cursor.x];
+            new_planet = this.star.planets[this.cursor.x];
           }
-          current_planet.init();
-          starmap.current_star = current_planet.star;
-          player.vx = 0;
-          player.vy = 0;
-          player.x = 0;
-          player.y = 0;
-          flightMode(true);
+          if (new_planet !== current_planet) {
+            current_planet = new_planet;
+            current_planet.init();
+            starmap.current_star = current_planet.star;
+            player.vx = 0;
+            player.vy = 0;
+            player.x = frand(-W, W);
+            player.y = frand(-W, W);
+            flightMode(true);
+          }
         }
         if (this.positions.length === 0) return;
         if (gbox.keyIsHit('up')) {
@@ -1253,7 +1527,7 @@
       };
 
       Planetmap.prototype.blit = function() {
-        var c, m, moon, p, planet, x, y, _i, _j, _k, _len, _len2, _len3, _ref, _ref2, _ref3;
+        var c, m, moon, p, planet, x, y, _i, _j, _k, _l, _len, _len2, _len3, _len4, _ref, _ref2, _ref3, _ref4, _results;
         c = gbox.getBufferContext();
         if (c) {
           gbox.blitAll(c, gbox.getImage('starmap_gui'), {
@@ -1311,12 +1585,28 @@
               dy: Math.round(current_planet.cursorpos.y) - 4
             });
           }
-          return gbox.blitTile(c, {
+          gbox.blitTile(c, {
             tileset: 'cursors',
             tile: 4,
             dx: Math.round(this.positions[this.cursor.x][this.cursor.y].x),
             dy: Math.round(this.positions[this.cursor.x][this.cursor.y].y) - 4
           });
+          _ref4 = player.missions;
+          _results = [];
+          for (_l = 0, _len4 = _ref4.length; _l < _len4; _l++) {
+            m = _ref4[_l];
+            if (m.location && m.location.star === this.star) {
+              _results.push(gbox.blitTile(c, {
+                tileset: 'cursors',
+                tile: 5,
+                dx: Math.round(this.positions[m.location.pnum][0].x) - 4,
+                dy: Math.round(this.positions[m.location.pnum][0].y) - 4
+              }));
+            } else {
+              _results.push(void 0);
+            }
+          }
+          return _results;
         }
       };
 
@@ -1347,6 +1637,15 @@
       }
 
       Person.prototype.render = function(x, y, alpha) {
+        this.render_face(x, y, alpha);
+        if (!this.fugitive) return;
+        return gbox.blitAll(gbox.getBufferContext(), gbox.getImage('fugitive_icon'), {
+          dx: Math.round(x + 17),
+          dy: Math.round(y + 5)
+        });
+      };
+
+      Person.prototype.render_face = function(x, y, alpha) {
         var n, partNum, _i, _len, _ref, _results;
         n = 0;
         _ref = this.parts;
@@ -1367,6 +1666,10 @@
       return Person;
 
     })();
+    ACCEPT_MESSAGES = ['You won\'t regret it.', 'Okay!', 'Excellent!', 'Wise choice.'];
+    ABANDON_MESSAGES = ['I thought we had a deal!', 'Oh well, your loss.', 'Why the sudden change of heart?', 'Can\'t make up your mind, can you?'];
+    SUCCESS_MESSAGES = ['Pleasure doing business with you.', 'Thank you!', 'Thank you so much!', 'Keep up the good work.'];
+    FAILURE_MESSAGES = ['What a waste of time!', 'Worthless! You will not be paid.', 'Ugh. Goodbye.'];
     Mission = (function(_super) {
 
       __extends(Mission, _super);
@@ -1376,14 +1679,45 @@
         this.accepted = false;
       }
 
+      Mission.prototype.success = function() {
+        var idx;
+        idx = player.missions.indexOf(this);
+        player.missions.splice(idx, 1);
+        message.set(choose(SUCCESS_MESSAGES), 240, this.person);
+        if (this.price) return player.funds += this.price;
+      };
+
+      Mission.prototype.failure = function() {
+        var idx;
+        idx = player.missions.indexOf(this);
+        player.missions.splice(idx, 1);
+        return message.set(choose(FAILURE_MESSAGES), 240, this.person);
+      };
+
+      Mission.prototype.onaccept = function() {
+        return message.set(choose(ACCEPT_MESSAGES), 240, this.person);
+      };
+
+      Mission.prototype.onabandon = function() {
+        return message.set(choose(ABANDON_MESSAGES), 240, this.person);
+      };
+
       Mission.prototype.a = function() {
-        var dq;
+        var dq, idx;
         dq = this.doesnt_qualify();
         if (dq) {
-          console.log(dq);
+          message.set(dq, 240, this.person);
           return false;
         }
         this.accepted = !this.accepted;
+        if (this.accepted) {
+          player.missions.push(this);
+          this.onaccept();
+        } else {
+          idx = player.missions.indexOf(this);
+          player.missions.splice(idx, 1);
+          this.onabandon();
+        }
         return true;
       };
 
@@ -1407,6 +1741,7 @@
       return Mission;
 
     })(MenuItem);
+    NO_CABINS_MESSAGES = ['That\'s a bit too cozy for my taste.', 'It looks like you\'re full.', 'You\'ll need to make room for me.'];
     CabinDweller = (function(_super) {
 
       __extends(CabinDweller, _super);
@@ -1416,22 +1751,29 @@
         this.star = star;
       }
 
+      CabinDweller.prototype.success = function() {
+        var idx;
+        CabinDweller.__super__.success.call(this);
+        idx = player.cabins.indexOf(this.person);
+        return player.cabins.splice(idx, 1);
+      };
+
       CabinDweller.prototype.a = function() {
+        var idx;
         if (CabinDweller.__super__.a.call(this)) {
           if (this.accepted) {
-            console.log('Accepted Taxi Mission!');
-            return --player.available_cabins;
+            return player.cabins.push(this.person);
           } else {
-            console.log('Abandoned Taxi Mission!');
-            return ++player.available_cabins;
+            idx = player.cabins.indexOf(this.person);
+            return player.cabins.splice(idx, 1);
           }
         }
       };
 
       CabinDweller.prototype.doesnt_qualify = function() {
         if (this.accepted) return false;
-        if (player.available_cabins <= 0) {
-          return 'No available cabins.';
+        if (player.cabins.length >= player.available_cabins) {
+          return choose(NO_CABINS_MESSAGES);
         } else {
           return false;
         }
@@ -1440,16 +1782,35 @@
       return CabinDweller;
 
     })(Mission);
+    FUGITIVE_TAXI_BONUS = 1.25;
     TaxiMission = (function(_super) {
 
       __extends(TaxiMission, _super);
 
-      function TaxiMission() {
-        TaxiMission.__super__.constructor.apply(this, arguments);
+      TaxiMission.prototype.type = 'taxi';
+
+      function TaxiMission(person) {
+        this.person = person;
+        TaxiMission.__super__.constructor.call(this, this.person);
+        this.price = RESOURCES.fuel.mean_price * 1.25;
+        if (this.person.fugitive) {
+          this.price *= FUGITIVE_TAXI_BONUS;
+          this.loc_name = 'Pirate st.';
+          this.star = (choose(starmap.known_pirate_stations)).star;
+        } else {
+          this.loc_name = 'ITG st.';
+          this.star = (choose(starmap.known_itg_stations)).star;
+        }
+        this.price *= starmap.current_star.distance_to(this.star);
+        this.price = Math.round(this.price * 100) / 100;
+        this.location = {
+          star: this.star,
+          pnum: rand(0, this.star.pcount - 1)
+        };
       }
 
       TaxiMission.prototype.text = function() {
-        return TaxiMission.__super__.text.call(this) + 'Taxi';
+        return TaxiMission.__super__.text.call(this) + 'Taxi-' + this.loc_name + '-$' + this.price;
       };
 
       return TaxiMission;
@@ -1463,6 +1824,8 @@
         CrewMission.__super__.constructor.apply(this, arguments);
       }
 
+      CrewMission.prototype.type = 'crew';
+
       CrewMission.prototype.text = function() {
         return CrewMission.__super__.text.call(this) + 'Crew';
       };
@@ -1470,20 +1833,66 @@
       return CrewMission;
 
     })(CabinDweller);
+    ResourceExchanger = (function(_super) {
+
+      __extends(ResourceExchanger, _super);
+
+      function ResourceExchanger(name, station) {
+        this.name = name;
+        this.station = station;
+        this.resource = RESOURCES[this.name];
+        this.price = this.station.prices[this.name];
+      }
+
+      ResourceExchanger.prototype.a = function() {
+        if (!this.station.cargo[this.name] || this.station.cargo[this.name].length <= 0) {
+          return;
+        }
+        if (player.funds < this.price) {
+          message.set('Insufficient funds.', 120);
+          return;
+        }
+        player.funds -= this.price;
+        if (!player.cargo[this.name]) player.cargo[this.name] = [];
+        return player.cargo[this.name].push(this.station.cargo[this.name].pop());
+      };
+
+      ResourceExchanger.prototype.b = function() {
+        if (!player.cargo[this.name] || player.cargo[this.name].length <= 0) {
+          return;
+        }
+        player.funds += this.price;
+        if (!this.station.cargo[this.name]) this.station.cargo[this.name] = [];
+        return this.station.cargo[this.name].push(player.cargo[this.name].pop());
+      };
+
+      ResourceExchanger.prototype.text = function() {
+        var lamt, ramt;
+        lamt = ramt = 0;
+        if (player.cargo[this.name]) lamt = player.cargo[this.name].length;
+        if (this.station.cargo[this.name]) {
+          ramt = this.station.cargo[this.name].length;
+        }
+        return "" + this.name + "[" + lamt + "] <-$" + this.price + "-> [" + ramt + "]";
+      };
+
+      return ResourceExchanger;
+
+    })(MenuItem);
     DOCKING_DURATION = 80;
     Station = (function() {
 
       Station.prototype.new_missions = function() {
-        var activity, i, max_count, mission, mission_count, person;
+        var activity, c, count, i, max_count, max_resource_count, mission, mission_count, name, person, res, resource_wealth, _results;
         max_count = PLANET_CLASSES[this.planet.ptype].max_mission_count;
         activity = this.planet.star.itg + this.planet.star.pirate;
-        mission_count = Math.round(frand(0, 1) * activity * max_count);
+        mission_count = Math.round(Math.min(max_count, frand(0, 1) * activity * max_count));
         this.missions = [];
         i = 0;
         while (i < mission_count) {
           person = new Person('passenger', frand(0, 1) < STATIONS[this.name].fugitive_rate);
           mission = void 0;
-          switch (rand(0, 4)) {
+          switch (rand(0, 0)) {
             case 0:
               mission = new TaxiMission(person);
               break;
@@ -1493,12 +1902,33 @@
           this.missions.push(mission);
           ++i;
         }
-        return console.log(this.missions);
+        this.cargo = {};
+        max_resource_count = ((Math.PI * this.planet.radius * this.planet.radius) / 50) * this.planet.wealth;
+        _results = [];
+        for (name in RESOURCES) {
+          if (!__hasProp.call(RESOURCES, name)) continue;
+          res = RESOURCES[name];
+          this.cargo[name] = [];
+          resource_wealth = res[this.planet.ptype + '_prob'];
+          count = 2 * Math.round(frand(0, resource_wealth * max_resource_count));
+          c = 0;
+          _results.push((function() {
+            var _results2;
+            _results2 = [];
+            while (c < count) {
+              this.cargo[name].push(new CargoItem(this.planet.pid));
+              _results2.push(++c);
+            }
+            return _results2;
+          }).call(this));
+        }
+        return _results;
       };
 
       Station.prototype.group = 'stations';
 
       function Station(planet, name, x, y) {
+        var n, p, _ref;
         this.planet = planet;
         this.name = name;
         this.x = x;
@@ -1510,6 +1940,14 @@
         this.tileset = 'stations_tiles';
         this.ang = 0;
         this.docking_count = 0;
+        this.cargo = {};
+        this.prices = {};
+        _ref = this.planet.prices;
+        for (n in _ref) {
+          if (!__hasProp.call(_ref, n)) continue;
+          p = _ref[n];
+          this.prices[n] = Math.round(gaus(p, RESOURCES[n].price_stdv / 2) * 100) / 100;
+        }
       }
 
       Station.prototype.w = 32;
@@ -1551,18 +1989,83 @@
       return Station;
 
     })();
+    Equipment = (function(_super) {
+
+      __extends(Equipment, _super);
+
+      function Equipment(eq) {
+        this.eq = eq;
+      }
+
+      Equipment.prototype.a = function() {
+        var lvl;
+        if (this.eq.price) {
+          if (player.funds < this.eq.price) {
+            message.set('Insufficient funds.', 120);
+            return;
+          }
+          this.eq.apply();
+        }
+        lvl = player.equipment[this.eq.name];
+        if (lvl >= 2) return;
+        if (player.funds < this.eq.levels[lvl + 1].price) {
+          message.set('Insufficient funds.', 120);
+          return;
+        }
+        player.funds -= this.eq.levels[lvl + 1].price;
+        player[this.eq.attr] = this.eq.levels[lvl + 1].val;
+        return ++player.equipment[this.eq.name];
+      };
+
+      Equipment.prototype.text = function() {
+        var lvl, lvl_vis;
+        if (this.eq.price) return this.eq.name + ' $' + this.eq.price;
+        lvl = player.equipment[this.eq.name];
+        lvl_vis = lvl + 2;
+        if (lvl_vis >= 4) return this.eq.name + ' v3.0 - MAX';
+        return this.eq.name + ' v' + lvl_vis + '.0 $' + this.eq.levels[lvl + 1].price;
+      };
+
+      return Equipment;
+
+    })(MenuItem);
     STATION_SUB_SCREENS = [
       {
         name: 'Cargo',
-        bg: 'starmap_gui'
+        bg: 'starmap_gui',
+        extra_blit: function(c) {
+          return gbox.blitText(gbox.getBufferContext(), {
+            font: 'small',
+            text: 'FUNDS: $' + Math.round(player.funds * 100) / 100,
+            dx: 2,
+            dy: 16,
+            dw: W,
+            dh: 16,
+            halign: gbox.ALIGN_LEFT,
+            valign: gbox.ALIGN_TOP
+          });
+        }
       }, {
         name: 'Missions',
         bg: 'starmap_gui'
       }, {
         name: 'Hangar',
-        bg: 'starmap_gui'
+        bg: 'starmap_gui',
+        extra_blit: function(c) {
+          return gbox.blitText(gbox.getBufferContext(), {
+            font: 'small',
+            text: 'FUNDS: $' + Math.round(player.funds * 100) / 100,
+            dx: 2,
+            dy: 16,
+            dw: W,
+            dh: 16,
+            halign: gbox.ALIGN_LEFT,
+            valign: gbox.ALIGN_TOP
+          });
+        }
       }
     ];
+    ITG_INSPECT_PROB = 0.5;
     StationScreen = (function(_super) {
 
       __extends(StationScreen, _super);
@@ -1570,7 +2073,7 @@
       StationScreen.prototype.group = 'stationscreen';
 
       function StationScreen(station) {
-        var i, scr, _i, _len;
+        var eq, i, m, name, r, scr, _i, _j, _k, _len, _len2, _len3, _ref;
         StationScreen.__super__.constructor.call(this);
         this.station = station;
         this.skip = false;
@@ -1582,20 +2085,46 @@
           this.sub_items.push([]);
           switch (scr.name) {
             case 'Cargo':
-              false;
+              for (name in RESOURCES) {
+                if (!__hasProp.call(RESOURCES, name)) continue;
+                r = RESOURCES[name];
+                this.sub_items[i].push(new ResourceExchanger(name, this.station));
+              }
               break;
             case 'Missions':
               this.sub_items[i] = this.station.missions;
               break;
             case 'Hangar':
-              false;
+              for (_j = 0, _len2 = EQUIPMENT.length; _j < _len2; _j++) {
+                eq = EQUIPMENT[_j];
+                this.sub_items[i].push(new Equipment(eq));
+              }
           }
           ++i;
+        }
+        _ref = player.missions;
+        for (_k = 0, _len3 = _ref.length; _k < _len3; _k++) {
+          m = _ref[_k];
+          switch (m.type) {
+            case 'taxi':
+              if (this.station.planet.num === m.location.pnum && this.station.planet.star === m.location.star) {
+                m.success();
+              }
+          }
+        }
+        if (this.station.name === 'itg' && (ITG_INSPECT_PROB * player.itg_inspect_mod > frand(0, 1))) {
+          if (player.cargo.narcotics && player.cargo.narcotics.length > 0) {
+            player.cargo.narcotics = [];
+            message.add('Illegal narcotics were found...');
+            message.add('...they have been confiscated.');
+          }
         }
       }
 
       StationScreen.prototype.c = function() {
         gbox.trashObject(this);
+        player.vx = 0;
+        player.vy = -0.5;
         return flightMode();
       };
 
@@ -1606,10 +2135,8 @@
         }
         if (gbox.keyIsHit('left')) {
           this.sub_screen -= 1;
-          console.log('l');
         } else if (gbox.keyIsHit('right')) {
           this.sub_screen += 1;
-          console.log('r');
         }
         if (this.sub_screen < 0) this.sub_screen = STATION_SUB_SCREENS.length - 1;
         this.sub_screen = this.sub_screen % STATION_SUB_SCREENS.length;
@@ -1618,13 +2145,37 @@
       };
 
       StationScreen.prototype.blit = function() {
-        var c;
+        var alpha, c, extra, i, left, n, s, w, _i, _len;
         c = gbox.getBufferContext();
         if (!c) return;
         gbox.blitAll(c, gbox.getImage(STATION_SUB_SCREENS[this.sub_screen].bg), {
           dx: 0,
           dy: 0
         });
+        extra = STATION_SUB_SCREENS[this.sub_screen].extra_blit;
+        if (extra) extra(c);
+        left = 2;
+        i = 0;
+        for (_i = 0, _len = STATION_SUB_SCREENS.length; _i < _len; _i++) {
+          s = STATION_SUB_SCREENS[_i];
+          n = s.name;
+          alpha = 0.5;
+          if (this.sub_screen === i) alpha = 1;
+          w = (n.length + 1) * 8;
+          gbox.blitText(gbox.getBufferContext(), {
+            font: 'small',
+            text: n,
+            dx: left,
+            dy: H - 12,
+            dw: w,
+            dh: 16,
+            halign: gbox.ALIGN_LEFT,
+            valign: gbox.ALIGN_TOP,
+            alpha: alpha
+          });
+          left += w;
+          ++i;
+        }
         return this.render(0, 0);
       };
 
@@ -1703,37 +2254,68 @@
         tons_per_unit: 1,
         gas_giant_prob: 0.1,
         rocky_prob: 0.5,
-        moon_prob: 0.75
+        moon_prob: 0.75,
+        mean_price: 20,
+        price_stdv: 2,
+        min_dist: 0.5,
+        max_dist: 3
       },
       'lifeforms': {
         num: 1,
         tons_per_unit: 0.05,
         gas_giant_prob: 0.05,
         rocky_prob: 0.2,
-        moon_prob: 0.1
+        moon_prob: 0.1,
+        mean_price: 30,
+        price_stdv: 4,
+        min_dist: 0,
+        max_dist: 1
       },
       'fuel': {
         num: 2,
         tons_per_unit: 0.25,
         gas_giant_prob: 0.25,
         rocky_prob: 0.1,
-        moon_prob: 0.1
+        moon_prob: 0.1,
+        mean_price: 5,
+        price_stdv: 0.5,
+        min_dist: 0,
+        max_dist: 1.25
       },
       'minerals': {
         num: 3,
         tons_per_unit: 0.5,
         gas_giant_prob: 0.05,
         rocky_prob: 0.5,
-        moon_prob: 0.2
+        moon_prob: 0.2,
+        mean_price: 5,
+        price_stdv: 1,
+        min_dist: 0,
+        max_dist: 1
       },
       'narcotics': {
         num: 4,
         tons_per_unit: 0.01,
         gas_giant_prob: 0,
         rocky_prob: 0,
-        moon_prob: 0
+        moon_prob: 0,
+        mean_price: 50,
+        price_stdv: 9,
+        pirate_mod_min: 0.66,
+        pirate_mod_max: 0.9,
+        min_dist: 4,
+        max_dist: 5
       }
     };
+    CargoItem = (function() {
+
+      function CargoItem(origin) {
+        this.origin = origin;
+      }
+
+      return CargoItem;
+
+    })();
     Resource = (function() {
 
       Resource.prototype.group = 'resources';
@@ -1741,6 +2323,7 @@
       function Resource(name, x, y, vx, vy, planet) {
         this.planet = planet;
         this.num = RESOURCES[name].num;
+        this.name = name;
         this.next_frame = this.frame_length;
         this.frame = rand(this.num * 8, this.num * 8 + 8);
         this.tileset = 'resources_tiles';
@@ -1780,6 +2363,12 @@
           this.vx *= 0.005;
           this.vy *= 0.005;
         }
+        if (gbox.collides(player, this)) {
+          if (!player.cargo[this.name]) player.cargo[this.name] = [];
+          player.cargo[this.name].push(new CargoItem(current_planet.pid));
+          message.set('+1 ' + this.name, 60);
+          this.die();
+        }
         --this.next_frame;
         if (this.next_frame < 0) {
           this.frame = this.num * 8 + ((this.frame % 8) + 1) % 8;
@@ -1801,7 +2390,7 @@
 
     })();
     main = function() {
-      gbox.setGroups(['background', 'game', 'starmap', 'planetmap', 'stationscreen', 'planet', 'stations', 'resources', 'particles', 'player', 'friend_shots', 'baddies', 'drones', 'foe_shots', 'pause']);
+      gbox.setGroups(['background', 'game', 'starmap', 'planetmap', 'stationscreen', 'planet', 'stations', 'resources', 'particles', 'player', 'friend_shots', 'baddies', 'drones', 'foe_shots', 'message', 'pause']);
       loadColors();
       maingame = gamecycle.createMaingame('game', 'game');
       maingame.gameMenu = function() {
@@ -1824,9 +2413,10 @@
         return gbox.keyIsHit('a');
       };
       maingame.initializeGame = function() {
+        date = rand(3500000, 4000000);
         player = new Player;
         starmap = new Starmap(5, 34, 0.6);
-        starmap.current_star = choose(starmap.stars);
+        starmap.current_star = starmap.known_itg_stations[0].star;
         starmap.cursor = {
           x: starmap.current_star.x,
           y: starmap.current_star.y
@@ -1834,6 +2424,7 @@
         starmap.current_star.generate_planets();
         current_planet = choose(starmap.current_star.planets);
         window.planetmap = new Planetmap(starmap.current_star);
+        gbox.addObject(message);
         gbox.addObject(starmap);
         cam = addCamera();
         return gbox.addObject({

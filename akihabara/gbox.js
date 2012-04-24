@@ -632,7 +632,7 @@ var gbox={
 			// Handle holding
 			for (var key in gbox._keymap)
 				if (gbox._keyboard[gbox._keymap[key]]==-1) gbox._keyboard[gbox._keymap[key]]=0; else
-				if (gbox._keyboard[gbox._keymap[key]]&&(gbox._keyboard[gbox._keymap[key]]<100))	gbox._keyboard[gbox._keymap[key]]++;
+				if (gbox._keyboard[gbox._keymap[key]]&&(gbox._keyboard[gbox._keymap[key]]>=1))	gbox._keyboard[gbox._keymap[key]]++;
 			if (gbox._forcedidle)
 				this._gametimer=setTimeout(gbox._nextframe,gbox._forcedidle); // Wait for the browser
 			else
@@ -699,6 +699,9 @@ var gbox={
   * @returns {Boolean} True if the given key has been held down for at least one frame.
   */  
 	keyIsHold:function(id) { return this._keyboard[this._keymap[id]]>1},
+	keyIsHeldFor:function(id,count) { return this._keyboard[this._keymap[id]]==count},
+	keyIsHeldForAtLeast:function(id,count) { return this._keyboard[this._keymap[id]]>=count},
+	keyHeldTime:function(id) { return this._keyboard[this._keymap[id]];},
   
   /**
   * Returns true if a given key in this._keymap is released. Only returns true on the transition from pressed to unpressed.
