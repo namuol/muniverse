@@ -236,7 +236,10 @@
         gbox.stopGroup(g);
         gbox.toggleGroup(g);
       }
-      return player.skip = true;
+      player.skip = true;
+      if (!gbox.getObject('planetmap', 'pmap')) {
+        return gbox.addObject(window.planetmap);
+      }
     };
     starmapMode = function() {
       var g, groups, stopGroups, _i, _j, _len, _len2;
@@ -526,7 +529,7 @@
             val: 0.025
           }, {
             price: 20000,
-            val: 0.1
+            val: 0.07
           }, {
             price: 60000,
             val: 0.3
@@ -1140,8 +1143,7 @@
         }
         if (this.closest_star && gbox.keyIsHit('a')) {
           if (player.fuel() >= this.closest_star.dist) {
-            console.log('DIST: ' + this.closest_star.dist);
-            console.log('FUEL: ' + player.fuel() / LY_SCALE);
+            player.burn_fuel(this.closest_star.dist);
             gbox.clearGroup('planetmap');
             this.closest_star.generate_planets();
             window.planetmap = new Planetmap(this.closest_star);
@@ -1439,6 +1441,8 @@
     })();
     window.planetmap = void 0;
     Planetmap = (function() {
+
+      Planetmap.prototype.id = 'pmap';
 
       Planetmap.prototype.group = 'planetmap';
 
@@ -2073,7 +2077,7 @@
       StationScreen.prototype.group = 'stationscreen';
 
       function StationScreen(station) {
-        var eq, i, m, name, r, scr, _i, _j, _k, _len, _len2, _len3, _ref;
+        var eq, i, m, name, r, scr, tmp, _i, _j, _k, _len, _len2, _len3;
         StationScreen.__super__.constructor.call(this);
         this.station = station;
         this.skip = false;
@@ -2102,9 +2106,9 @@
           }
           ++i;
         }
-        _ref = player.missions;
-        for (_k = 0, _len3 = _ref.length; _k < _len3; _k++) {
-          m = _ref[_k];
+        tmp = player.missions.slice(0);
+        for (_k = 0, _len3 = tmp.length; _k < _len3; _k++) {
+          m = tmp[_k];
           switch (m.type) {
             case 'taxi':
               if (this.station.planet.num === m.location.pnum && this.station.planet.star === m.location.star) {
@@ -2427,10 +2431,18 @@
         gbox.addObject(message);
         gbox.addObject(starmap);
         cam = addCamera();
+        gbox.addObject({
+          group: 'game',
+          tick: 0,
+          first: function() {
+            if (++this.tick % 60 === 0) return console.log(player.missions);
+          }
+        });
         return gbox.addObject({
           id: 'bg_id',
           group: 'background',
           color: 'rgb(0,0,0)',
+          tick: 0,
           blit: function() {
             gbox.blitFade(gbox.getBufferContext(), {
               color: '#000510',
