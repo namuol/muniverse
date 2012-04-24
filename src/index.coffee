@@ -278,6 +278,9 @@ html ->
         gbox.toggleGroup g
 
       player.skip = true
+      if not gbox.getObject 'planetmap', 'pmap'
+        gbox.addObject window.planetmap
+
     
     starmapMode = ->
       stopGroups = [
@@ -627,6 +630,7 @@ html ->
           @cargo.fuel.pop()
           --dist
       fuel: ->
+        return 99999
         return @cargo.fuel.length
 
       id: 'player_id'
@@ -1090,7 +1094,7 @@ html ->
 
         if @closest_star and gbox.keyIsHit 'a'
           if player.fuel() >= @closest_star.dist
-            player.burn_fuel()
+            player.burn_fuel(@closest_star.dist)
             gbox.clearGroup 'planetmap'
             @closest_star.generate_planets()
             window.planetmap = new Planetmap @closest_star
@@ -1335,6 +1339,7 @@ html ->
     
     window.planetmap = undefined
     class Planetmap
+      id: 'pmap'
       group: 'planetmap'
       constructor: (star) ->
         @skip = false
@@ -1820,6 +1825,7 @@ html ->
                 @sub_items[i].push new Equipment eq
           ++i
         for m in player.missions
+          console.log m
           switch m.type
             when 'taxi'
               if @station.planet.num is m.location.pnum and @station.planet.star is m.location.star
@@ -2123,13 +2129,21 @@ html ->
         window.planetmap = new Planetmap starmap.current_star
         gbox.addObject message
         gbox.addObject starmap
-
         cam = addCamera()
+        
+        gbox.addObject
+          group: 'game'
+          tick:0
+          first: ->
+            if ++@tick % 60 == 0
+              console.log 'still goin...'
+
 
         gbox.addObject
           id: 'bg_id'
           group: 'background'
           color: 'rgb(0,0,0)'
+          tick:0
           blit: ->
             gbox.blitFade gbox.getBufferContext(),
               color:'#000510'
