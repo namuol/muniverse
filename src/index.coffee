@@ -33,6 +33,10 @@ html ->
       # approximates Box-Muller transform:
       rnd = (Math.random()*2-1)+(Math.random()*2-1)+(Math.random()*2-1)
       return rnd*stdv + mean
+    dist = (a,b) ->
+      dx=a.x-b.x
+      dy=a.y-b.y
+      Math.sqrt(dx*dx+dy*dy)
 
     choose = (array) -> array[rand(0,array.length-1)]
 
@@ -112,7 +116,7 @@ html ->
 
     loadResources = ->
       help.akihabaraInit
-        title: 'MICROVERSE (working title)'
+        title: 'μniverse'
         width: W
         height: H
         zoom: 2
@@ -237,6 +241,7 @@ html ->
         'particles'
         'starmap'
         'stations'
+        'radar'
       ]
       for g in stopGroups
         gbox.stopGroup g
@@ -266,6 +271,7 @@ html ->
         'particles'
         'starmap'
         'stations'
+        'radar'
       ]
       for g in stopGroups
         gbox.stopGroup g
@@ -295,6 +301,7 @@ html ->
         'particles'
         'planetmap'
         'stations'
+        'radar'
       ]
       for g in stopGroups
         gbox.stopGroup g
@@ -323,6 +330,8 @@ html ->
       gbox.clearGroup 'planet'
       gbox.clearGroup 'resources'
       gbox.clearGroup 'stations'
+      gbox.clearGroup 'radar'
+      gbox.addObject new Radar
       gbox.addObject player
       gbox.addObject current_planet
       if current_planet.itg_station
@@ -350,6 +359,7 @@ html ->
         'resources'
         'particles'
         'stations'
+        'radar'
       ]
       for g in groups
         gbox.stopGroup g
@@ -388,7 +398,7 @@ html ->
       blit: (x,y) ->
         return if not @visible
         if @msgs[0].person
-          @msgs[0].person.render_face(1,1)
+          @msgs[0].person.render_face(1,1,1, true)
         gbox.blitText gbox.getBufferContext(),
           font: 'small'
           text: @msgs[0].str
@@ -468,15 +478,13 @@ html ->
         gbox.blitText gbox.getBufferContext(),
           font: 'small'
           text: @text()
-          dx:x
-          dy:top
+          dx:Math.round x
+          dy:Math.round top
           dw:W
           dh:16
           halign: gbox.ALIGN_LEFT
           valign: gbox.ALIGN_TOP
           alpha:alpha
-
-
 
     addCamera = ->
       gbox.addObject
@@ -486,17 +494,73 @@ html ->
         vx:0
         vy:0
         group: 'game'
-        init: ->
+        initialize: ->
+          @max_dist = 100
+          @max_dist2 = @max_dist*@max_dist
           @x = 100
           @y = 100
           @vx = 0
           @vy = 0
+          @w = W
+          @h = H
 
         first: ->
           @vx = (player.x+player.vx*60 - (@x+160)) * 0.05
           @vy = (player.y+player.vy*60 - (@y+160)) * 0.05
           @x += @vx
           @y += @vy
+          c =
+            x:@x + @w/2
+            y:@y + @h/2
+          dx = c.x-player.x
+          dy = c.y-player.y
+          d2 = dx*dx + dy*dy
+          if d2 > @max_dist2
+            d = Math.sqrt(d2)
+            dr = (d-@max_dist)/d
+            ddx = dr*dx
+            ddy = dr*dy
+            @x -= ddx
+            @y -= ddy
+
+    DEFAULT_RADAR_RENDER = (x,y, alpha) ->
+      if x > cam.h-2
+        x = cam.h-2
+      circle gbox.getBufferContext(), 'white', Math.round(x),Math.round(y), 2
+
+    RADAR_ITEMS =
+      'planet':
+        min_dist: -> -1
+        render: (x,y, alpha) ->
+          current_planet.render 4/current_planet.radius,
+            Math.round(x),Math.round(y),
+            current_planet.dirx,current_planet.diry
+      'stations':
+        min_dist: -> -1
+    class Radar
+      group: 'radar'
+      constructor: ->
+      blit: ->
+        c =
+          x:(player.x-cam.x)
+          y:(player.y-cam.y)
+
+        for own group,item of RADAR_ITEMS
+          for own id,obj of gbox.getGroup group
+            dx = (obj.x-cam.x)-c.x
+            dy = (obj.y-cam.y)-c.y
+            d = Math.sqrt dx*dx+dy*dy
+            if item.min_dist() < 0 or d < item.min_dist()
+              _x=c.x+dx
+              _y=c.y+dy
+
+              x = clamp c.x+dx, 0,cam.w
+              y = clamp c.y+dy, 0,cam.h
+              continue if _x==x and _y==y
+              if item.render
+                item.render x,y, 1
+              else
+                DEFAULT_RADAR_RENDER x,y, 1
 
     GAME_OVER_MSGS = [
       'IT\'S OVER'
@@ -509,70 +573,70 @@ html ->
         name: 'Thruster'
         attr: 'thrust'
         levels: [
-            price: 1500,
+            price: -> 1500,
             val: 0.045*0.33
           ,
-            price: 10000,
+            price: -> 10000,
             val: 0.045*0.66
           ,
-            price: 40000
+            price: -> 40000
             val: 0.045
         ]
       ,
         name: 'Plasma Cannon'
         attr: 'wpower'
         levels: [
-            price: 1000,
+            price: -> 1000,
             val: 0.5
           ,
-            price: 5000,
+            price: -> 5000,
             val: 1
           ,
-            price: 20000
+            price: -> 20000
             val: 2
         ]
       ,
         name: 'Weapon Charger'
         attr: 'wcharge_rate'
         levels: [
-            price: 10000,
+            price: -> 10000,
             val: 0.025
           ,
-            price: 20000,
+            price: -> 20000,
             val: 0.07
           ,
-            price: 60000
+            price: -> 60000
             val: 0.3
         ]
       ,
         name: 'Afterburner'
         attr: 'afterburn'
         levels: [
-            price: 2000,
+            price: -> 2000,
             val: 0.005
           ,
-            price: 15000,
+            price: -> 15000,
             val: 0.01
           ,
-            price: 60000
+            price: -> 60000
             val: 0.03
         ]
       ,
         name: 'Shields'
         attr: 'afterburn'
         levels: [
-            price: 2000,
+            price: -> 2000,
             val: 3
           ,
-            price: 25000,
+            price: -> 25000,
             val: 10
           ,
-            price: 90000
+            price: -> 90000
             val: 25
         ]
       ,
         name: 'Repair Shields'
-        price: 250
+        price: -> (player.shields_max - player.shields) * 100
         apply: ->
           player.shields = player.shields_max
 
@@ -1044,7 +1108,7 @@ html ->
         while i < 300
           star = choose @stars
           arr = @known_itg_stations
-          planet = rand 0, star.pcount
+          planet = rand 0, star.pcount-1
           if star.pirate > star.itg
             arr = @known_pirate_stations
             star.known_pirate_station = planet
@@ -1140,12 +1204,12 @@ html ->
 
             gbox.blitTile c,
               tileset: 'cursors'
-              tile: 0
+              tile: 1
               dx: Math.round(@current_star.x)-4
               dy: Math.round(@current_star.y)-4
             gbox.blitTile c,
               tileset: 'cursors'
-              tile: 1
+              tile: 0
               dx: Math.round(@cursor.x)-4
               dy: Math.round(@cursor.y)-4
             gbox.blitTile c,
@@ -1153,7 +1217,7 @@ html ->
               tile: 2
               dx: Math.round(@closest_star.x)-4
               dy: Math.round(@closest_star.y)-4
-            circle c, '#d97777',
+            circle c, 'yellow',
               Math.round(@current_star.x),
               Math.round(@current_star.y),
               player.fuel()/LY_SCALE
@@ -1162,7 +1226,7 @@ html ->
             if m.location
               gbox.blitTile c,
                 tileset: 'cursors'
-                tile: 5
+                tile: 3
                 dx: Math.round(m.location.star.x)-4
                 dy: Math.round(m.location.star.y)-4
 
@@ -1218,6 +1282,7 @@ html ->
     MIN_STATION_DIST = 100
     class Planet
       constructor: (@star, @pid, @num, moon, itg, pirate) ->
+        console.log itg
         @_x = 0#gbox.getScreenW()/2 - @w/2
         @_y = 0#gbox.getScreenH()/2 - @h/2
 
@@ -1264,7 +1329,7 @@ html ->
         pirate_station_prob = cls.station_prob * @star.pirate + MIN_PIRATE_STATION_PROB
         #console.log itg_station_prob
         #console.log pirate_station_prob
-        if itg is @num or Math.random() < itg_station_prob
+        if (itg is @num) or Math.random() < itg_station_prob
           r = MIN_STATION_DIST + @radius * 2
           ang = Math.random() * 2*Math.PI
           x = @_x + r*Math.cos ang
@@ -1272,7 +1337,7 @@ html ->
           @itg_station = new Station @, 'itg', x,y
           @itg_station.new_missions()
 
-        if pirate is @num or Math.random() < pirate_station_prob
+        if (pirate is @num) or Math.random() < pirate_station_prob
           r =MIN_STATION_DIST + @radius * 4
           ang = Math.random() * 2*Math.PI
           x = @_x + r*Math.cos ang
@@ -1357,12 +1422,14 @@ html ->
           planet.cursorpos =
             x:x
             y:y
+            r:planet.radius*0.25
           @positions[p].push planet.cursorpos
           m=0
           for moon in planet.moons
             moon.cursorpos =
               x:x
               y:y+(planet.radius*0.5+(m+1)*PLANET_CLASSES.moon.max_radius)*0.5
+              r:moon.radius*0.25
 
             @positions[p].push moon.cursorpos
             ++m
@@ -1461,27 +1528,31 @@ html ->
               y,
               -moon.radius*0.5,0
             ++m
-         
-
-          if current_planet and current_planet.star is @star
-            gbox.blitTile c,
-              tileset: 'cursors'
-              tile: 3
-              dx: Math.round(current_planet.cursorpos.x)
-              dy: Math.round(current_planet.cursorpos.y)-4
-          gbox.blitTile c,
-            tileset: 'cursors'
-            tile: 4
-            dx: Math.round(@positions[@cursor.x][@cursor.y].x)
-            dy: Math.round(@positions[@cursor.x][@cursor.y].y)-4
 
           for m in player.missions
             if m.location and m.location.star is @star
+              pos=@positions[m.location.pnum][0]
               gbox.blitTile c,
                 tileset: 'cursors'
-                tile: 5
-                dx: Math.round(@positions[m.location.pnum][0].x)-4
-                dy: Math.round(@positions[m.location.pnum][0].y)-4
+                tile: 6
+                dx: Math.round(pos.x+pos.r)-4
+                dy: Math.round(pos.y)-4
+        
+          pos=@positions[@cursor.x][@cursor.y]
+          gbox.blitTile c,
+            tileset: 'cursors'
+            tile: 5
+            dx: Math.round(pos.x+pos.r)-4
+            dy: Math.round(pos.y)-4
+
+          if current_planet and current_planet.star is @star
+            pos=current_planet.cursorpos
+            gbox.blitTile c,
+              tileset: 'cursors'
+              tile: 4
+              dx: Math.round(pos.x+pos.r)-4
+              dy: Math.round(pos.y)-4
+
 
     STATIONS = {
       'itg':
@@ -1497,27 +1568,31 @@ html ->
     class Person
       constructor: (role, fugitive) ->
         @parts = []
-        @parts.push rand 0, 16
-        @parts.push rand 0, 16
+        @parts.push rand 0, 15
+        @parts.push rand 0, 15
         if rand(0,1)
           @parts.push @parts[1]
         @role = role
         @fugitive = fugitive
-      render: (x,y, alpha) ->
-        @render_face(x,y,alpha)
+        @tick = 0
+      render: (x,y, alpha, talking) ->
+        @render_face(x,y,alpha, talking)
         return if not @fugitive
         gbox.blitAll gbox.getBufferContext(), gbox.getImage('fugitive_icon'),
           dx: Math.round(x+17)
           dy: Math.round(y+5)
 
-      render_face: (x,y, alpha) ->
+      render_face: (x,y, alpha, talking) ->
         n=0
         for partNum in @parts
+          yoff = 0
+          #if talking and (n==2) and (Math.floor(++@tick/18)%2 == 0)
+          #  yoff = -2
           gbox.blitTile gbox.getBufferContext(),
             tileset: 'peoples_tiles'
             tile: n*16 + partNum
             dx: Math.round(x)
-            dy: Math.round(y)
+            dy: Math.round(y+yoff)
           ++n
     ACCEPT_MESSAGES = [
       'You won\'t regret it.'
@@ -1620,16 +1695,17 @@ html ->
         if @person.fugitive
           @price *= FUGITIVE_TAXI_BONUS
           @loc_name = 'Pirate st.'
-          @star = (choose starmap.known_pirate_stations).star
+          station = (choose starmap.known_pirate_stations)
         else
           @loc_name = 'ITG st.'
-          @star = (choose starmap.known_itg_stations).star
+          station = (choose starmap.known_itg_stations)
 
+        @star = station.star
         @price *= starmap.current_star.distance_to @star
         @price = Math.round(@price*100)/100
         @location =
           star: @star
-          pnum: rand 0, @star.pcount-1
+          pnum: station.planet
       text: ->
         super() + 'Taxi-' + @loc_name + '-$'+@price
     class CrewMission extends CabinDweller
@@ -1688,8 +1764,14 @@ html ->
         max_resource_count = ((Math.PI * @planet.radius*@planet.radius) / 50) * @planet.wealth
         for own name,res of RESOURCES
           @cargo[name] = []
-          resource_wealth = res[@planet.ptype+'_prob']
-          count = 2*Math.round(frand(0, resource_wealth * max_resource_count))
+          resource_wealth = 0
+          count = 0
+          if res.natural
+            resource_wealth = res[@planet.ptype+'_prob']
+            count = 2*Math.round(frand(0, resource_wealth * max_resource_count))
+          else
+            resource_wealth = frand 0,1
+            count = 50*frand(0,(@planet.star.itg+@planet.star.pirate))
           c=0
           while c < count
             @cargo[name].push new CargoItem @planet.pid
@@ -1746,29 +1828,30 @@ html ->
       constructor: (@eq) ->
       a: ->
         if @eq.price
-          if player.funds < @eq.price
+          if player.funds < @eq.price()
             message.set 'Insufficient funds.',120
             return
           @eq.apply()
+          return
 
         lvl = player.equipment[@eq.name]
         if lvl >= 2
           return
-        if player.funds < @eq.levels[lvl+1].price
+        if player.funds < @eq.levels[lvl+1].price()
           message.set 'Insufficient funds.',120
           return
-        player.funds -= @eq.levels[lvl+1].price
+        player.funds -= @eq.levels[lvl+1].price()
         player[@eq.attr] = @eq.levels[lvl+1].val
         ++player.equipment[@eq.name]
 
       text: ->
         if @eq.price
-          return @eq.name + ' $' + @eq.price
+          return @eq.name + ' $' + @eq.price()
         lvl = player.equipment[@eq.name]
         lvl_vis = lvl+2
         if lvl_vis >= 4
           return @eq.name + ' v3.0 - MAX'
-        @eq.name + ' v' + (lvl_vis) + '.0 $'+@eq.levels[lvl+1].price
+        @eq.name + ' v' + (lvl_vis) + '.0 $'+@eq.levels[lvl+1].price()
 
     STATION_SUB_SCREENS = [
         name:'Cargo'
@@ -1960,6 +2043,7 @@ html ->
     RESOURCES =
       'scrap metal':
         num:0
+        natural:true
         tons_per_unit:1
         gas_giant_prob: 0.1
         rocky_prob: 0.5
@@ -1970,6 +2054,7 @@ html ->
         max_dist: 3
       'lifeforms':
         num:1
+        natural:true
         tons_per_unit:0.05
         gas_giant_prob: 0.05
         rocky_prob: 0.2
@@ -1980,6 +2065,7 @@ html ->
         max_dist: 1
       'fuel':
         num:2
+        natural:true
         tons_per_unit:0.25
         gas_giant_prob: 0.25
         rocky_prob: 0.1
@@ -1990,6 +2076,7 @@ html ->
         max_dist: 1.25
       'minerals':
         num:3
+        natural:true
         tons_per_unit:0.5
         gas_giant_prob: 0.05
         rocky_prob: 0.5
@@ -2000,6 +2087,7 @@ html ->
         max_dist: 1
       'narcotics':
         num:4
+        natural:false
         tons_per_unit:0.01
         gas_giant_prob: 0
         rocky_prob: 0
@@ -2091,6 +2179,7 @@ html ->
         'baddies'
         'drones'
         'foe_shots'
+        'radar'
         'message'
         'pause'
       ]
@@ -2130,14 +2219,6 @@ html ->
         gbox.addObject starmap
         cam = addCamera()
         
-        gbox.addObject
-          group: 'game'
-          tick:0
-          first: ->
-            if ++@tick % 60 == 0
-              console.log player.missions
-
-
         gbox.addObject
           id: 'bg_id'
           group: 'background'
