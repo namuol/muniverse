@@ -1090,8 +1090,7 @@ html ->
 
         if @closest_star and gbox.keyIsHit 'a'
           if player.fuel() >= @closest_star.dist
-            console.log 'DIST: ' + @closest_star.dist
-            console.log 'FUEL: ' + player.fuel()/LY_SCALE
+            player.burn_fuel()
             gbox.clearGroup 'planetmap'
             @closest_star.generate_planets()
             window.planetmap = new Planetmap @closest_star
