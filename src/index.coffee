@@ -630,7 +630,6 @@ html ->
           @cargo.fuel.pop()
           --dist
       fuel: ->
-        return 99999
         return @cargo.fuel.length
 
       id: 'player_id'
@@ -1824,8 +1823,8 @@ html ->
               for eq in EQUIPMENT
                 @sub_items[i].push new Equipment eq
           ++i
-        for m in player.missions
-          console.log m
+        tmp = player.missions.slice(0)
+        for m in tmp
           switch m.type
             when 'taxi'
               if @station.planet.num is m.location.pnum and @station.planet.star is m.location.star
@@ -2136,7 +2135,7 @@ html ->
           tick:0
           first: ->
             if ++@tick % 60 == 0
-              console.log 'still goin...'
+              console.log player.missions
 
 
         gbox.addObject
