@@ -312,6 +312,11 @@ html ->
         gbox.clearGroup 'foe_shots'
         gbox.clearGroup 'particles'
         gbox.clearGroup 'baddies'
+        baddy_count = rand 0, 6
+        i=0
+        while i<baddy_count
+          addBaddie()
+          ++i
       gbox.clearGroup 'planet'
       gbox.clearGroup 'resources'
       gbox.clearGroup 'stations'
@@ -490,18 +495,25 @@ html ->
           @x += @vx
           @y += @vy
 
+    GAME_OVER_MSGS = [
+      'IT\'S OVER'
+      'GAME IS OVER'
+      'DERP! You died.'
+      'Losing is fun.'
+    ]
+
     EQUIPMENT = [
         name: 'Thruster'
         attr: 'thrust'
         levels: [
             price: 1500,
-            val: 0.025*0.33
+            val: 0.045*0.33
           ,
             price: 10000,
-            val: 0.025*0.66
+            val: 0.045*0.66
           ,
             price: 40000
-            val: 0.025
+            val: 0.045
         ]
       ,
         name: 'Plasma Cannon'
@@ -517,37 +529,70 @@ html ->
             val: 2
         ]
       ,
+        name: 'Weapon Charger'
+        attr: 'wcharge_rate'
+        levels: [
+            price: 10000,
+            val: 0.025
+          ,
+            price: 20000,
+            val: 0.07
+          ,
+            price: 60000
+            val: 0.3
+        ]
+      ,
         name: 'Afterburner'
         attr: 'afterburn'
         levels: [
             price: 2000,
-            val: 0.03025
+            val: 0.005
           ,
             price: 15000,
-            val: 0.005
+            val: 0.01
           ,
             price: 60000
             val: 0.03
         ]
+      ,
+        name: 'Shields'
+        attr: 'afterburn'
+        levels: [
+            price: 2000,
+            val: 3
+          ,
+            price: 25000,
+            val: 10
+          ,
+            price: 90000
+            val: 25
+        ]
+      ,
+        name: 'Repair Shields'
+        price: 250
+        apply: ->
+          player.shields = player.shields_max
+
     ]
 
     
     BASE_THRUST = EQUIPMENT[0].levels[0].val
     BASE_SHIELDS = 3
-    BASE_WCHARGE_RATE = 0.05
+    BASE_WCHARGE_RATE = EQUIPMENT[2].levels[0].val
     BASE_WCHARGE_CAP = 2
     BASE_WSPEED = 2
     BASE_WPOWER = EQUIPMENT[1].levels[0].val
     BASE_WSPAN = 80
     TURN_SPEED = 0.1
     BASE_CARGO_CAP = 5
-    BASE_AFTERBURN = EQUIPMENT[2].levels[0].val
+    BASE_AFTERBURN = EQUIPMENT[3].levels[0].val
     player = undefined
     date = 0
     class Player
       constructor: (name) ->
+        @alive = true
         @missions = []
-        @funds = 500000
+        @funds = 500
         @cabins = []
         @available_cabins = 3
         @wcharge_cap = BASE_WCHARGE_CAP
@@ -558,7 +603,8 @@ html ->
         @wspan = BASE_WSPAN
         @thrust = BASE_THRUST
         @afterburn = BASE_AFTERBURN
-        @shields = BASE_SHIELDS
+        @shields_max = BASE_SHIELDS
+        @shields = @shields_max
         @itg_inspect_mod = 1
 
         @cargo =
@@ -566,7 +612,7 @@ html ->
             1,2,3,4
           ]
           narcotics: [
-            1,2,3,4,5
+           'teehee',2
           ]
         @equipment = {}
         for eq in EQUIPMENT
@@ -575,6 +621,11 @@ html ->
 
         @init()
 
+      burn_fuel: (dist) ->
+        dist = Math.round dist
+        while dist > 0
+          @cargo.fuel.pop()
+          --dist
       fuel: ->
         return @cargo.fuel.length
 
@@ -654,6 +705,8 @@ html ->
               @vx+frand(-.5,.5),@vy+frand(-.5,.5)
             ++i
           @shields -= shot.power
+          if @shields <= 0
+            @die()
           shot.die()
         
         if not going
@@ -671,6 +724,22 @@ html ->
           tile: @frame
           dx: Math.round(@x-cam.x)
           dy: Math.round(@y-cam.y)
+
+      die: ->
+        @alive = false
+        gbox.trashObject @
+        message.set choose GAME_OVER_MSGS
+        i=0
+        while i < 20
+          addParticle 'fire', @x+@w/2,@y+@h/2,
+            @vx+frand(-1,1),@vy+frand(-1,1)
+          ++i
+        i=0
+        while i < 12
+          addParticle 'wreckage', @x+@w/2,@y+@h/2,
+            @vx+frand(-0.5,0.5),@vy+frand(-.5,.5)
+          ++i
+
 
     addBaddie = (planet, profile) ->
       gbox.addObject
@@ -697,7 +766,7 @@ html ->
           @tsy = 0
           @attack_dist = 90
           @orbit_radius = 60
-          @hostile = 0.25+current_planet.star.pirate-current_planet.star.itg < frand(0,1)
+          @hostile = Math.random() < (0.25+current_planet.star.pirate-current_planet.star.itg)
           @ang = 0
           @thrust = 0.006
           @afterburn = 0.005
@@ -706,6 +775,7 @@ html ->
           @cargo = {}
 
         first: ->
+          @hostile = false if !player.alive
           if @hostile
             dx = player.x - @x
             dy = player.y - @y
@@ -944,7 +1014,6 @@ html ->
             y: rand radius,H-radius-16
             radius: radius
           ++i
-        console.log @pirate_regions
 
         # Generate stars!
         @stars = []
@@ -1020,13 +1089,18 @@ html ->
           @cursor.x += 0.5
 
         if @closest_star and gbox.keyIsHit 'a'
-          gbox.clearGroup 'planetmap'
-          @closest_star.generate_planets()
-          window.planetmap = new Planetmap @closest_star
-          window.planetmap.skip = true
-          gbox.addObject planetmap
-          planetmapMode()
-          return
+          if player.fuel() >= @closest_star.dist
+            console.log 'DIST: ' + @closest_star.dist
+            console.log 'FUEL: ' + player.fuel()/LY_SCALE
+            gbox.clearGroup 'planetmap'
+            @closest_star.generate_planets()
+            window.planetmap = new Planetmap @closest_star
+            window.planetmap.skip = true
+            gbox.addObject planetmap
+            planetmapMode()
+            return
+          else
+            message.set 'Insufficient fuel.', 90
 
         if current_planet and gbox.keyIsHit 'c'
           flightMode()
@@ -1607,7 +1681,6 @@ html ->
 
           @missions.push mission
           ++i
-        console.log @missions
         @cargo = {}
         max_resource_count = ((Math.PI * @planet.radius*@planet.radius) / 50) * @planet.wealth
         for own name,res of RESOURCES
@@ -1618,7 +1691,6 @@ html ->
           while c < count
             @cargo[name].push new CargoItem @planet.pid
             ++c
-        console.log @cargo
 
       group: 'stations'
       constructor: (@planet, @name, @x,@y) ->
@@ -1670,6 +1742,12 @@ html ->
     class Equipment extends MenuItem
       constructor: (@eq) ->
       a: ->
+        if @eq.price
+          if player.funds < @eq.price
+            message.set 'Insufficient funds.',120
+            return
+          @eq.apply()
+
         lvl = player.equipment[@eq.name]
         if lvl >= 2
           return
@@ -1678,11 +1756,11 @@ html ->
           return
         player.funds -= @eq.levels[lvl+1].price
         player[@eq.attr] = @eq.levels[lvl+1].val
-        console.log @eq.attr
-        console.log player[@eq.attr]
         ++player.equipment[@eq.name]
 
       text: ->
+        if @eq.price
+          return @eq.name + ' $' + @eq.price
         lvl = player.equipment[@eq.name]
         lvl_vis = lvl+2
         if lvl_vis >= 4
@@ -1720,7 +1798,7 @@ html ->
             valign: gbox.ALIGN_TOP
 
     ]
-    ITG_INSPECT_PROB = 1
+    ITG_INSPECT_PROB = 0.5
     class StationScreen extends Menu
       group: 'stationscreen'
       constructor: (station) ->
@@ -1742,7 +1820,6 @@ html ->
               for eq in EQUIPMENT
                 @sub_items[i].push new Equipment eq
           ++i
-        console.log player.missions
         for m in player.missions
           switch m.type
             when 'taxi'
@@ -1770,10 +1847,8 @@ html ->
         
         if gbox.keyIsHit 'left'
           @sub_screen -= 1
-          console.log 'l'
         else if gbox.keyIsHit 'right'
           @sub_screen += 1
-          console.log 'r'
 
         if @sub_screen < 0
           @sub_screen = STATION_SUB_SCREENS.length-1
