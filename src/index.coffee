@@ -563,18 +563,20 @@ html ->
             @y -= ddy
 
     DEFAULT_RADAR_RENDER = (x,y, alpha) ->
-      if x > cam.h-2
-        x = cam.h-2
+      x = clamp(x, 4, cam.w-4)+0.5
+      y = clamp(y, 4, cam.h-4)+0.5
       c = gbox.getBufferContext()
       if c
-        circle c, 'white', Math.round(x),Math.round(y), 2
+        circle c, 'yellow', Math.round(x),Math.round(y), 1
 
     RADAR_ITEMS =
       'planet':
         min_dist: -> -1
         render: (x,y, alpha) ->
-          current_planet.render 4/current_planet.radius,
-            Math.round(x),Math.round(y),
+          r = 4/current_planet.radius
+          current_planet.render r,
+            Math.round(clamp(x, 4, W-4)),
+            Math.round(clamp(y, 4, H-4)),
             current_planet.dirx,current_planet.diry
       'stations':
         min_dist: -> -1
@@ -757,6 +759,11 @@ html ->
         @ay = 0
         @particle_tick=0
 
+      setAng: (val) ->
+        @ang = val
+        @ax = Math.cos(@ang) * @thrust
+        @ay = Math.sin(@ang) * @thrust
+
       first: ->
         if @skip
           @skip = false
@@ -772,13 +779,9 @@ html ->
           @vy *= 1-@afterburn
 
         if gbox.keyIsPressed 'right'
-          @ang += TURN_SPEED
-          @ax = Math.cos(@ang) * @thrust
-          @ay = Math.sin(@ang) * @thrust
+          @setAng(@ang + TURN_SPEED)
         else if gbox.keyIsPressed 'left'
-          @ang -= TURN_SPEED
-          @ax = Math.cos(@ang) * @thrust
-          @ay = Math.sin(@ang) * @thrust
+          @setAng(@ang - TURN_SPEED)
 
         if @ang < 0
           @ang = Math.PI*2 - @ang
@@ -1966,7 +1969,7 @@ html ->
         player.y = @station.y - (player.h+2)
         player.x = @station.x + @station.w/2
         player.vy = -0.199999999
-        player.ang = 1.5*Math.PI
+        player.setAng(1.5*Math.PI)
         flightMode()
 
       first: ->
