@@ -526,7 +526,9 @@ html ->
     DEFAULT_RADAR_RENDER = (x,y, alpha) ->
       if x > cam.h-2
         x = cam.h-2
-      circle gbox.getBufferContext(), 'white', Math.round(x),Math.round(y), 2
+      c = gbox.getBufferContext()
+      if c
+        circle c, 'white', Math.round(x),Math.round(y), 2
 
     RADAR_ITEMS =
       'planet':
