@@ -1575,14 +1575,14 @@ html ->
               gbox.blitTile c,
                 tileset: 'cursors'
                 tile: 6
-                dx: Math.round(pos.x+pos.r)-4
+                dx: Math.round(pos.x)-4
                 dy: Math.round(pos.y)-4
         
           pos=@positions[@cursor.x][@cursor.y]
           gbox.blitTile c,
             tileset: 'cursors'
             tile: 5
-            dx: Math.round(pos.x+pos.r)-4
+            dx: Math.round(pos.x)-4
             dy: Math.round(pos.y)-4
 
           if current_planet and current_planet.star is @star
@@ -1590,7 +1590,7 @@ html ->
             gbox.blitTile c,
               tileset: 'cursors'
               tile: 4
-              dx: Math.round(pos.x+pos.r)-4
+              dx: Math.round(pos.x)-4
               dy: Math.round(pos.y)-4
 
 
