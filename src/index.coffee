@@ -565,7 +565,6 @@ html ->
                 DEFAULT_RADAR_RENDER x,y, 1
 
     GAME_OVER_MSGS = [
-      'IT\'S OVER'
       'GAME IS OVER'
       'DERP! You died.'
       'Losing is fun.'
@@ -1219,7 +1218,7 @@ html ->
               tile: 2
               dx: Math.round(@closest_star.x)-4
               dy: Math.round(@closest_star.y)-4
-            circle c, 'yellow',
+            circle c, '#33e5ff',
               Math.round(@current_star.x),
               Math.round(@current_star.y),
               player.fuel()/LY_SCALE
