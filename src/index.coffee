@@ -762,9 +762,9 @@ html ->
           @skip = false
           return
 
-        going = false
+        @going = false
         if gbox.keyIsPressed 'up'
-          going = true
+          @going = true
           @vx += @ax
           @vy += @ay
         else if gbox.keyIsPressed('down') or gbox.keyIsPressed('b')
@@ -787,7 +787,7 @@ html ->
         @y += @vy
 
         @frame = Math.round(((@ang+(Math.PI/2)) / (Math.PI*2)) * 16) % 16
-        if going
+        if @going
           @frame += 16
           if ++@particle_tick % 4 is 0
             addParticle 'fire', @x+@w/2,@y+@h/2,
@@ -816,7 +816,7 @@ html ->
             @die()
           shot.die()
         
-        if not going
+        if not @going
           if Math.abs(@vx) < 0.2
             @vx = 0
           if Math.abs(@vy) < 0.2
@@ -1846,6 +1846,8 @@ html ->
         @yoff = 2*Math.sin @ang
 
         if !player.going and gbox.collides @, player
+          player.vx *= 0.95
+          player.vy *= 0.95
           ++@docking_count
         else
           @docking_count = 0
@@ -1959,12 +1961,12 @@ html ->
             message.add 'Illegal narcotics were found...'
             message.add '...they have been confiscated.'
 
-
-
       c: ->
         gbox.trashObject @
-        player.vx = 0
-        player.vy = -0.5
+        player.y = @station.y - (player.h+2)
+        player.x = @station.x + @station.w/2
+        player.vy = -0.199999999
+        player.ang = 1.5*Math.PI
         flightMode()
 
       first: ->
