@@ -517,8 +517,10 @@
       });
     };
     DEFAULT_RADAR_RENDER = function(x, y, alpha) {
+      var c;
       if (x > cam.h - 2) x = cam.h - 2;
-      return circle(gbox.getBufferContext(), 'white', Math.round(x), Math.round(y), 2);
+      c = gbox.getBufferContext();
+      if (c) return circle(c, 'white', Math.round(x), Math.round(y), 2);
     };
     RADAR_ITEMS = {
       'planet': {
