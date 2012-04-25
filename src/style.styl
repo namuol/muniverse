@@ -1,19 +1,39 @@
-
 body
   color white
   font-family sans-serif
-  -webkit-user-select none
   margin 0px
 
 canvas
+  width 100%
+  margin auto auto
+  -moz-user-select none
+  -webkit-user-select none
   image-rendering optimizeSpeed
   image-rendering -moz-crisp-edges
   image-rendering -webkit-optimize-contrast
   image-rendering optimize-contrast
   -ms-interpolation-mode nearest-neighbor
 
-.directions
-  width 100%
-  text-align center
+body.instructions-visible canvas
+  padding 20px
   position absolute
-  top 15pt
+  top 0
+  left 0
+
+#instructions
+  display none
+
+
+h4, h5
+  padding 4pt
+  margin 4pt
+
+body.instructions-visible #instructions
+  color #aaa
+  display block
+  position absolute
+  left 780px
+  float right
+  text-align left
+
+
