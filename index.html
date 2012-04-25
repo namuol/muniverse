@@ -587,7 +587,7 @@
       return Radar;
 
     })();
-    GAME_OVER_MSGS = ['IT\'S OVER', 'GAME IS OVER', 'DERP! You died.', 'Losing is fun.'];
+    GAME_OVER_MSGS = ['GAME IS OVER', 'DERP! You died.', 'Losing is fun.'];
     EQUIPMENT = [
       {
         name: 'Thruster',
@@ -1337,7 +1337,7 @@
               dx: Math.round(this.closest_star.x) - 4,
               dy: Math.round(this.closest_star.y) - 4
             });
-            circle(c, 'yellow', Math.round(this.current_star.x), Math.round(this.current_star.y), player.fuel() / LY_SCALE);
+            circle(c, '#33e5ff', Math.round(this.current_star.x), Math.round(this.current_star.y), player.fuel() / LY_SCALE);
           }
           _ref3 = player.missions;
           _results = [];
