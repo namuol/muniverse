@@ -1,5 +1,5 @@
-<html><head><script type="text/javascript" src="akihabara/gbox.js"></script><script type="text/javascript" src="akihabara/iphopad.js"></script><script type="text/javascript" src="akihabara/trigo.js"></script><script type="text/javascript" src="akihabara/toys.js"></script><script type="text/javascript" src="akihabara/help.js"></script><script type="text/javascript" src="akihabara/tool.js"></script><script type="text/javascript" src="akihabara/gamecycle.js"></script><script type="text/javascript" src="seedrandom-min.js"></script><link rel="stylesheet" href="style.css" /><meta name="viewport" content="width:device-width; initial-scale:1.0; maximum-scale:1.0; user-scalable:0;" /></head><body><div class="directions"></div><canvas width="327" height="1" style="display:none" id="starcolors"></canvas><canvas width="16" height="3" style="display:none" id="planetcolors"></canvas><canvas width="320" height="320" style="display:none" id="starmap"></canvas></body><script>var __slice = Array.prototype.slice;var __hasProp = Object.prototype.hasOwnProperty;var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };var __extends = function(child, parent) {  for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }  function ctor() { this.constructor = child; }  ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype;  return child; };var __indexOf = Array.prototype.indexOf || function(item) {  for (var i = 0, l = this.length; i < l; i++) {    if (this[i] === item) return i;  } return -1; };(function () {
-    var ABANDON_MESSAGES, ACCEPT_MESSAGES, BASE_AFTERBURN, BASE_CARGO_CAP, BASE_SEED, BASE_SHIELDS, BASE_THRUST, BASE_WCHARGE_CAP, BASE_WCHARGE_RATE, BASE_WPOWER, BASE_WSPAN, BASE_WSPEED, CabinDweller, CargoItem, CrewMission, DEFAULT_RADAR_RENDER, DOCKING_DURATION, EQUIPMENT, Equipment, FAILURE_MESSAGES, FUGITIVE_TAXI_BONUS, GAME_OVER_MSGS, GAS_GIANT_MIN_ORBIT, H, ITG_INSPECT_PROB, LY_SCALE, MAX_ITG_REGIONS, MAX_ITG_REGION_RADIUS, MAX_PIRATE_REGIONS, MAX_PIRATE_REGION_RADIUS, MAX_STAR_COUNT, MAX_STAR_PLANETS, MAX_STAR_RAD, MIN_ITG_REGIONS, MIN_ITG_REGION_RADIUS, MIN_ITG_STATION_PROB, MIN_PIRATE_REGIONS, MIN_PIRATE_REGION_RADIUS, MIN_PIRATE_STATION_PROB, MIN_STAR_COUNT, MIN_STAR_RAD, MIN_STATION_DIST, Menu, MenuItem, Message, Mission, NO_CABINS_MESSAGES, PARTICLES, PLANET_CLASSES, Person, Planet, Planetmap, Player, RADAR_ITEMS, RESOURCES, Radar, Resource, ResourceExchanger, STATIONS, STATION_SUB_SCREENS, SUCCESS_MESSAGES, Star, Starmap, Station, StationScreen, TURN_SPEED, TaxiMission, W, addBaddie, addCamera, addDrone, addParticle, addShot, cam, choose, circle, current_planet, date, dist, flightMode, frand, gaus, getPixel, groupCollides, loadColors, loadResources, main, maingame, message, planetcolors, planetmapMode, player, rand, rgba, setPixel, starcolors, starmap, starmapMode, stationMode;
+<html><head><script type="text/javascript" src="akihabara/gbox.js"></script><script type="text/javascript" src="akihabara/iphopad.js"></script><script type="text/javascript" src="akihabara/trigo.js"></script><script type="text/javascript" src="akihabara/toys.js"></script><script type="text/javascript" src="akihabara/help.js"></script><script type="text/javascript" src="akihabara/tool.js"></script><script type="text/javascript" src="akihabara/gamecycle.js"></script><script type="text/javascript" src="seedrandom-min.js"></script><link rel="stylesheet" href="style.css" /><meta name="viewport" content="width:device-width; initial-scale:1.0; maximum-scale:1.0; user-scalable:0;" /></head><body><div id="instructions"><h3>Instructions:</h3><h4>Star Map:</h4><ul><li>Arrow Keys move cursor to select star system, highlighted with green circle.</li><li>Large turquoise circle is the range of your FTL fuel.</li><li>'Z' selects star system</li><li>'C' returns to Flight Mode</li></ul><h4>Planet Map:</h4><ul><li>Arrow Keys move cursor to select a planet you wish to visit.</li><li>'Z' travels to that planet (instantaneously) and puts you in Flight Mode</li><li>'C' returns to Star Map</li></ul><h4>Flight Mode:</h4><ul><li>Arrow Keys -- control is much like classic Asteroids.<ul><li>Down is afterburner ('brake').</li></ul></li><li>'Z' -- Fire weapon.</li><li>"Park" over a space station for a few seconds to enter the Station Screen</li><li>Blinking pixels on and around planets are resources -- fly into them to collect them.</li></ul><h4>Station Screen:</h4><ul><li>'C' to exit the Station.</li><li>Up/Down to select different items on current screen.</li><li>Left/Right change screen (Cargo[trade], Missions, Hangar)<h5>Cargo</h5><ul><li>'Z' - Buy selected good</li><li>'X' - Sell selected good</li></ul><h5>Missions</h5><ul><li>'Z' - Accept/Abandon selected mission</li></ul><h5>Hangar</h5><ul><li>'Z' - Purchase selected upgrade</li></ul></li></ul></div><canvas width="327" height="1" style="display:none" id="starcolors"></canvas><canvas width="16" height="3" style="display:none" id="planetcolors"></canvas><canvas width="320" height="320" style="display:none" id="starmap"></canvas></body><script>var __slice = Array.prototype.slice;var __hasProp = Object.prototype.hasOwnProperty;var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };var __extends = function(child, parent) {  for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }  function ctor() { this.constructor = child; }  ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype;  return child; };var __indexOf = Array.prototype.indexOf || function(item) {  for (var i = 0, l = this.length; i < l; i++) {    if (this[i] === item) return i;  } return -1; };(function () {
+    var ABANDON_MESSAGES, ACCEPT_MESSAGES, BASE_AFTERBURN, BASE_CARGO_CAP, BASE_SEED, BASE_SHIELDS, BASE_THRUST, BASE_WCHARGE_CAP, BASE_WCHARGE_RATE, BASE_WPOWER, BASE_WSPAN, BASE_WSPEED, CabinDweller, CargoItem, CrewMission, DEFAULT_RADAR_RENDER, DOCKING_DURATION, EQUIPMENT, Equipment, FAILURE_MESSAGES, FUGITIVE_TAXI_BONUS, GAME_OVER_MSGS, GAS_GIANT_MIN_ORBIT, H, ITG_INSPECT_PROB, LY_SCALE, MAX_ITG_REGIONS, MAX_ITG_REGION_RADIUS, MAX_PIRATE_REGIONS, MAX_PIRATE_REGION_RADIUS, MAX_STAR_COUNT, MAX_STAR_PLANETS, MAX_STAR_RAD, MIN_ITG_REGIONS, MIN_ITG_REGION_RADIUS, MIN_ITG_STATION_PROB, MIN_PIRATE_REGIONS, MIN_PIRATE_REGION_RADIUS, MIN_PIRATE_STATION_PROB, MIN_STAR_COUNT, MIN_STAR_RAD, MIN_STATION_DIST, Menu, MenuItem, Message, Mission, NO_CABINS_MESSAGES, PARTICLES, PLANET_CLASSES, Person, Planet, Planetmap, Player, RADAR_ITEMS, RESOURCES, Radar, Resource, ResourceExchanger, STATIONS, STATION_SUB_SCREENS, SUCCESS_MESSAGES, Star, Starmap, Station, StationScreen, TURN_SPEED, TaxiMission, W, addBaddie, addCamera, addDrone, addParticle, addShot, body, cam, choose, circle, current_planet, date, dist, flightMode, frand, gaus, getPixel, groupCollides, loadColors, loadResources, main, maingame, message, planetcolors, planetmapMode, player, rand, rgba, setPixel, starcolors, starmap, starmapMode, stationMode;
     BASE_SEED = 'WEEEEE';
     Math.seedrandom(BASE_SEED);
     window.clamp = function(num, min, max) {
@@ -792,15 +792,14 @@
       };
 
       Player.prototype.first = function() {
-        var going,
-          _this = this;
+        var _this = this;
         if (this.skip) {
           this.skip = false;
           return;
         }
-        going = false;
+        this.going = false;
         if (gbox.keyIsPressed('up')) {
-          going = true;
+          this.going = true;
           this.vx += this.ax;
           this.vy += this.ay;
         } else if (gbox.keyIsPressed('down') || gbox.keyIsPressed('b')) {
@@ -820,7 +819,7 @@
         this.x += this.vx;
         this.y += this.vy;
         this.frame = Math.round(((this.ang + (Math.PI / 2)) / (Math.PI * 2)) * 16) % 16;
-        if (going) {
+        if (this.going) {
           this.frame += 16;
           if (++this.particle_tick % 4 === 0) {
             addParticle('fire', this.x + this.w / 2, this.y + this.h / 2, this.vx - this.ax * 40 * frand(0.5, 1), this.vy - this.ay * 40 * frand(0.5, 1));
@@ -842,7 +841,7 @@
           if (_this.shields <= 0) _this.die();
           return shot.die();
         });
-        if (!going) {
+        if (!this.going) {
           if (Math.abs(this.vx) < 0.2) this.vx = 0;
           if (Math.abs(this.vy) < 0.2) this.vy = 0;
         }
@@ -1723,7 +1722,7 @@
               gbox.blitTile(c, {
                 tileset: 'cursors',
                 tile: 6,
-                dx: Math.round(pos.x + pos.r) - 4,
+                dx: Math.round(pos.x) - 4,
                 dy: Math.round(pos.y) - 4
               });
             }
@@ -1732,7 +1731,7 @@
           gbox.blitTile(c, {
             tileset: 'cursors',
             tile: 5,
-            dx: Math.round(pos.x + pos.r) - 4,
+            dx: Math.round(pos.x) - 4,
             dy: Math.round(pos.y) - 4
           });
           if (current_planet && current_planet.star === this.star) {
@@ -1740,7 +1739,7 @@
             return gbox.blitTile(c, {
               tileset: 'cursors',
               tile: 4,
-              dx: Math.round(pos.x + pos.r) - 4,
+              dx: Math.round(pos.x) - 4,
               dy: Math.round(pos.y) - 4
             });
           }
@@ -2115,6 +2114,8 @@
         this.ang += 0.034;
         this.yoff = 2 * Math.sin(this.ang);
         if (!player.going && gbox.collides(this, player)) {
+          player.vx *= 0.95;
+          player.vy *= 0.95;
           ++this.docking_count;
         } else {
           this.docking_count = 0;
@@ -2272,8 +2273,10 @@
 
       StationScreen.prototype.c = function() {
         gbox.trashObject(this);
-        player.vx = 0;
-        player.vy = -0.5;
+        player.y = this.station.y - (player.h + 2);
+        player.x = this.station.x + this.station.w / 2;
+        player.vy = -0.199999999;
+        player.ang = 1.5 * Math.PI;
         return flightMode();
       };
 
@@ -2632,5 +2635,7 @@
       };
       return gbox.go();
     };
-    return window.addEventListener('load', loadResources, false);
+    window.addEventListener('load', loadResources, false);
+    body = document.getElementsByTagName('body')[0];
+    return body.setAttribute('class', 'instructions-visible');
   }).call(this);</script></html>
