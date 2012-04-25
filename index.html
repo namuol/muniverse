@@ -518,9 +518,10 @@
     };
     DEFAULT_RADAR_RENDER = function(x, y, alpha) {
       var c;
-      if (x > cam.h - 2) x = cam.h - 2;
+      x = clamp(x, 4, cam.w - 4) + 0.5;
+      y = clamp(y, 4, cam.h - 4) + 0.5;
       c = gbox.getBufferContext();
-      if (c) return circle(c, 'white', Math.round(x), Math.round(y), 2);
+      if (c) return circle(c, 'yellow', Math.round(x), Math.round(y), 1);
     };
     RADAR_ITEMS = {
       'planet': {
@@ -528,7 +529,9 @@
           return -1;
         },
         render: function(x, y, alpha) {
-          return current_planet.render(4 / current_planet.radius, Math.round(x), Math.round(y), current_planet.dirx, current_planet.diry);
+          var r;
+          r = 4 / current_planet.radius;
+          return current_planet.render(r, Math.round(clamp(x, 4, W - 4)), Math.round(clamp(y, 4, H - 4)), current_planet.dirx, current_planet.diry);
         }
       },
       'stations': {
@@ -791,6 +794,12 @@
         return this.particle_tick = 0;
       };
 
+      Player.prototype.setAng = function(val) {
+        this.ang = val;
+        this.ax = Math.cos(this.ang) * this.thrust;
+        return this.ay = Math.sin(this.ang) * this.thrust;
+      };
+
       Player.prototype.first = function() {
         var _this = this;
         if (this.skip) {
@@ -807,13 +816,9 @@
           this.vy *= 1 - this.afterburn;
         }
         if (gbox.keyIsPressed('right')) {
-          this.ang += TURN_SPEED;
-          this.ax = Math.cos(this.ang) * this.thrust;
-          this.ay = Math.sin(this.ang) * this.thrust;
+          this.setAng(this.ang + TURN_SPEED);
         } else if (gbox.keyIsPressed('left')) {
-          this.ang -= TURN_SPEED;
-          this.ax = Math.cos(this.ang) * this.thrust;
-          this.ay = Math.sin(this.ang) * this.thrust;
+          this.setAng(this.ang - TURN_SPEED);
         }
         if (this.ang < 0) this.ang = Math.PI * 2 - this.ang;
         this.x += this.vx;
@@ -2276,7 +2281,7 @@
         player.y = this.station.y - (player.h + 2);
         player.x = this.station.x + this.station.w / 2;
         player.vy = -0.199999999;
-        player.ang = 1.5 * Math.PI;
+        player.setAng(1.5 * Math.PI);
         return flightMode();
       };
 
