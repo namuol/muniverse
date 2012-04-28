@@ -363,6 +363,79 @@
 
   })();
 
+  window.sounds = {};
+
+  soundManager.url = 'swf';
+
+  soundManager.flashVersion = 9;
+
+  soundManager.useHighPerformance = true;
+
+  soundManager.useFastPolling = true;
+
+  soundManager.useHTML5Audio = true;
+
+  soundManager.onready(function() {
+    var sound, sounds_to_load, _i, _len, _results;
+    soundManager.defaultOptions.autoLoad = true;
+    soundManager.defaultOptions.onload = function() {
+      return console.log('sound loaded!');
+    };
+    sounds_to_load = [
+      {
+        id: 'blip',
+        url: 'blip1.wav',
+        volume: 50
+      }, {
+        id: 'select',
+        url: 'select0.wav',
+        volume: 50
+      }, {
+        id: 'cancel',
+        url: 'cancel0.wav',
+        volume: 50
+      }, {
+        id: 'thruster',
+        url: 'thruster0.wav',
+        volume: 50
+      }, {
+        id: 'explode',
+        url: 'explode0.wav',
+        volume: 25
+      }, {
+        id: 'hit0',
+        url: 'hit00.wav',
+        volume: 50
+      }, {
+        id: 'hit1',
+        url: 'hit01.wav',
+        volume: 50
+      }, {
+        id: 'hit2',
+        url: 'hit02.wav',
+        volume: 50
+      }, {
+        id: 'hit3',
+        url: 'hit03.wav',
+        volume: 50
+      }, {
+        id: 'shot0',
+        url: 'shot0.wav',
+        volume: 30
+      }, {
+        id: 'shot1',
+        url: 'shot1.wav',
+        volume: 30
+      }
+    ];
+    _results = [];
+    for (_i = 0, _len = sounds_to_load.length; _i < _len; _i++) {
+      sound = sounds_to_load[_i];
+      _results.push(sounds[sound.id] = soundManager.createSound(sound));
+    }
+    return _results;
+  });
+
   Person = (function() {
 
     Person.name = 'Person';
@@ -462,6 +535,7 @@
         d = Math.sqrt(dx * dx + dy * dy);
         if (d < W) {
           if (this.wcharge >= this.wcost && d < this.attack_dist) {
+            sounds.shot1.play();
             this.tsx = player.x + player.vx + this.vx;
             this.tsy = player.y + player.vy + this.vy;
             this.wcharge -= this.wcost;
@@ -499,6 +573,7 @@
       }
       return groupCollides(this, 'friend_shots', function(shot) {
         var i;
+        sounds['hit' + rand(0, 3)].play();
         _this.hostile = true;
         _this.shields -= shot.power;
         i = 0;
@@ -508,6 +583,7 @@
         }
         addParticle('wreckage', _this.x + _this.w / 2, _this.y + _this.h / 2, _this.vx + frand(-0.5, 0.5), _this.vy + frand(-.5, .5));
         if (_this.shields < 0) {
+          sounds.explode.play();
           _this.die();
           i = 0;
           while (i < 20) {
@@ -1239,7 +1315,7 @@
     };
 
     Starmap.prototype.first = function() {
-      var dx, dy, x, y;
+      var dx, dy, previous, x, y;
       if (this.skip) {
         this.skip = false;
         return;
@@ -1258,6 +1334,7 @@
       }
       if (this.closest_star && gbox.keyIsHit('a')) {
         if (player.fuel() >= this.closest_star.dist) {
+          sounds.select.play();
           player.burn_fuel(this.closest_star.dist);
           gbox.clearGroup('planetmap');
           this.closest_star.generate_planets();
@@ -1271,10 +1348,15 @@
         }
       }
       if (current_planet && gbox.keyIsHit('c')) {
+        sounds.cancel.play();
         flightMode();
       }
       if (!this.closest_star || this.cursor.x !== x || this.cursor.y !== y) {
+        previous = this.closest_star;
         this.closest_star = this.closest(this.cursor.x, this.cursor.y);
+        if (previous !== this.closest_star) {
+          sounds.blip.play();
+        }
         dx = this.current_star.x - this.closest_star.x;
         dy = this.current_star.y - this.closest_star.y;
         return this.closest_star.dist = Math.sqrt(dx * dx + dy * dy) * LY_SCALE;
@@ -1650,6 +1732,7 @@
         return;
       }
       if (gbox.keyIsHit('a')) {
+        sounds.select.play();
         new_planet = void 0;
         if (this.cursor.y) {
           new_planet = this.star.planets[this.cursor.x].moons[this.cursor.y - 1];
@@ -1671,13 +1754,17 @@
         return;
       }
       if (gbox.keyIsHit('up')) {
+        sounds.blip.play();
         this.cursor.y -= 1;
       } else if (gbox.keyIsHit('down')) {
+        sounds.blip.play();
         this.cursor.y += 1;
       }
       if (gbox.keyIsHit('left')) {
+        sounds.blip.play();
         this.cursor.x -= 1;
       } else if (gbox.keyIsHit('right')) {
+        sounds.blip.play();
         this.cursor.x += 1;
       }
       if (this.cursor.x < 0) {
@@ -1971,6 +2058,7 @@
       }
       if (gbox.keyIsHit('a') && (this.wcharge >= this.wpower)) {
         this.wcharge -= this.wpower;
+        sounds.shot0.play();
         gbox.addObject(new Shot(this.x + this.w / 2, this.y + this.h / 2, this.x + this.w / 2 + (this.ax / this.thrust) * 20000, this.y + this.h / 2 + (this.ay / this.thrust) * 20000, this.wpower, this.wspeed, 4, 'friend_shots', this.wspan, this.vx, this.vy));
       }
       if (this.wcharge < this.wcharge_cap) {
@@ -1978,6 +2066,7 @@
       }
       groupCollides(this, 'foe_shots', function(shot) {
         var i;
+        sounds['hit' + rand(0, 3)].play();
         i = 0;
         while (i < 3) {
           addParticle('fire', _this.x + _this.w / 2, _this.y + _this.h / 2, _this.vx + frand(-.5, .5), _this.vy + frand(-.5, .5));
@@ -2013,6 +2102,7 @@
 
     Player.prototype.die = function() {
       var i, _results;
+      sounds.explode.play();
       this.alive = false;
       gbox.trashObject(this);
       message.set(choose(GAME_OVER_MSGS));
