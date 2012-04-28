@@ -40,7 +40,7 @@ H = 320
 
 loadResources = ->
   help.akihabaraInit
-    title: 'μniverse'
+    #title: '&#956;niverse'
     width: W
     height: H
     zoom: 2
@@ -196,6 +196,8 @@ addCamera = ->
 maingame = undefined
 
 main = ->
+  document.getElementsByTagName('title')[0].innerHTML = 'μniverse'
+
   gbox.setGroups [
     'background'
     'game'
@@ -249,7 +251,7 @@ main = ->
     gbox.addObject message
     gbox.addObject starmap
     cam = addCamera()
-    
+
     gbox.addObject
       id: 'bg_id'
       group: 'background'
@@ -291,6 +293,5 @@ main = ->
         gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
           dx:Math.round x % W - W
           dy:Math.round y % H
-
   gbox.go()
 window.addEventListener 'load', loadResources, false
