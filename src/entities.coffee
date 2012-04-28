@@ -69,6 +69,7 @@ class Baddie
       d = Math.sqrt(dx*dx + dy*dy)
       if d < W
         if @wcharge >= @wcost and d < @attack_dist
+          sounds.shot1.play()
           @tsx = player.x + player.vx + @vx
           @tsy = player.y + player.vy + @vy
           @wcharge -= @wcost
@@ -110,6 +111,7 @@ class Baddie
       @wcharge += 1
 
     groupCollides @, 'friend_shots', (shot) =>
+      sounds['hit'+rand(0,3)].play()
       @hostile = true
       @shields -= shot.power
       i=0
@@ -121,6 +123,7 @@ class Baddie
         @vx+frand(-0.5,0.5),@vy+frand(-.5,.5)
 
       if @shields < 0
+        sounds.explode.play()
         @die()
         i=0
         while i < 20

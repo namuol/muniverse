@@ -8,6 +8,7 @@ html ->
     script type:'text/javascript', src:'akihabara/tool.js'
     script type:'text/javascript', src:'akihabara/gamecycle.js'
     script type:'text/javascript', src:'seedrandom.js'
+    script type:'text/javascript', src:'soundmanager2.js'
     script type:'text/javascript', src:'game.js'
     link rel:'stylesheet', href:'style.css'
     meta charset:'utf-8'

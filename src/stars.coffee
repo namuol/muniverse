@@ -177,6 +177,7 @@ class Starmap
 
     if @closest_star and gbox.keyIsHit 'a'
       if player.fuel() >= @closest_star.dist
+        sounds.select.play()
         player.burn_fuel(@closest_star.dist)
         gbox.clearGroup 'planetmap'
         @closest_star.generate_planets()
@@ -189,10 +190,14 @@ class Starmap
         message.set 'Insufficient fuel.', 90
 
     if current_planet and gbox.keyIsHit 'c'
+      sounds.cancel.play()
       flightMode()
 
     if !@closest_star or @cursor.x != x or @cursor.y != y
+      previous = @closest_star
       @closest_star = @closest(@cursor.x,@cursor.y)
+      if previous != @closest_star
+        sounds.blip.play()
       dx = @current_star.x-@closest_star.x
       dy = @current_star.y-@closest_star.y
       @closest_star.dist = Math.sqrt(dx*dx+dy*dy)*LY_SCALE

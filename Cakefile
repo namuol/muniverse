@@ -17,6 +17,7 @@ BUILD_DIR = 'build/'
 appFiles  = [
   'util'
   'ui'
+  'sounds'
   'entities'
   'equipment'
   'fx'

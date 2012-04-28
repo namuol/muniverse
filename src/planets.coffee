@@ -230,6 +230,7 @@ class Planetmap
       return
 
     if gbox.keyIsHit 'a'
+      sounds.select.play()
       new_planet = undefined
       if @cursor.y
         new_planet = @star.planets[@cursor.x].moons[@cursor.y-1]
@@ -248,12 +249,16 @@ class Planetmap
 
     return if @positions.length is 0
     if gbox.keyIsHit 'up'
+      sounds.blip.play()
       @cursor.y -= 1
     else if gbox.keyIsHit 'down'
+      sounds.blip.play()
       @cursor.y += 1
     if gbox.keyIsHit 'left'
+      sounds.blip.play()
       @cursor.x -= 1
     else if gbox.keyIsHit 'right'
+      sounds.blip.play()
       @cursor.x += 1
 
     if @cursor.x < 0

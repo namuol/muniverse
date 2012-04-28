@@ -171,6 +171,7 @@ class Player
 
     if gbox.keyIsHit('a') and (@wcharge >= @wpower)
       @wcharge -= @wpower
+      sounds.shot0.play()
       gbox.addObject new Shot @x+@w/2,@y+@h/2,
         @x+@w/2+(@ax/@thrust)*20000,
         @y+@h/2+(@ay/@thrust)*20000,
@@ -182,6 +183,7 @@ class Player
       @wcharge += @wcharge_rate
 
     groupCollides @, 'foe_shots', (shot) =>
+      sounds['hit'+rand(0,3)].play()
       i=0
       while i < 3
         addParticle 'fire', @x+@w/2,@y+@h/2,
@@ -209,6 +211,7 @@ class Player
       dy: Math.round(@y-cam.y)
 
   die: ->
+    sounds.explode.play()
     @alive = false
     gbox.trashObject @
     message.set choose GAME_OVER_MSGS

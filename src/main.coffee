@@ -149,6 +149,15 @@ loadResources = ->
     gapx: 0
     gapy: 0
 
+  #gbox.addAudio 'blip', ['blip0.0.wav'], {channel:'sfx'}
+  #gbox.addAudio 'select', ['select0.0.wav'], {channel:'sfx'}
+  #gbox.addAudio 'cancel', ['cancel0.0.wav'], {channel:'sfx'}
+  #gbox.setAudioChannels
+  #  sfx:
+  #    volume: 1.0
+  #  music:
+  #    volume: 0.75
+
   gbox.loadAll main
 
 cam = {
