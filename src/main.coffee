@@ -40,7 +40,7 @@ H = 320
 
 loadResources = ->
   help.akihabaraInit
-    #title: '&#956;niverse'
+    title: 'μniverse'
     width: W
     height: H
     zoom: 2
@@ -196,8 +196,6 @@ addCamera = ->
 maingame = undefined
 
 main = ->
-  document.getElementsByTagName('title')[0].innerHTML = 'μniverse'
-
   gbox.setGroups [
     'background'
     'game'

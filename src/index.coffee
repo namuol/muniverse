@@ -10,6 +10,7 @@ html ->
     script type:'text/javascript', src:'seedrandom.js'
     script type:'text/javascript', src:'game.js'
     link rel:'stylesheet', href:'style.css'
+    meta charset:'utf-8'
     
     meta
       name:'viewport'
