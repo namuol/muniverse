@@ -1,13 +1,13 @@
 #!/bin/sh
 mkdir -p deploy
 pushd build
-cp -r akihabara *.js *.html *.css *.png ../deploy/.
+cp -r akihabara *.js *.html *.css *.png *.wav ../deploy/.
 
 popd
 git checkout gh-pages
 mv deploy/* .
 mv deploy/akihabara/* akihabara/.
-git add akihabara *.js *.html *.css *.png
+git add akihabara *.js *.html *.css *.png *.wav
 
 rm -rf deploy
 git commit -am 'auto-deploy'
