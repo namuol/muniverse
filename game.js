@@ -2743,6 +2743,7 @@
 
   loadResources = function() {
     help.akihabaraInit({
+      title: 'μniverse',
       width: W,
       height: H,
       zoom: 2
@@ -2901,7 +2902,6 @@
   maingame = void 0;
 
   main = function() {
-    document.getElementsByTagName('title')[0].innerHTML = 'μniverse';
     gbox.setGroups(['background', 'game', 'starmap', 'planetmap', 'stationscreen', 'planet', 'stations', 'resources', 'particles', 'player', 'friend_shots', 'baddies', 'drones', 'foe_shots', 'radar', 'message', 'dialog']);
     loadColors();
     maingame = gamecycle.createMaingame('game', 'game');
