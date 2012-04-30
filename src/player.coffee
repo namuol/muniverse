@@ -13,7 +13,9 @@ flightMode = (reset) ->
   gbox.clearGroup 'resources'
   gbox.clearGroup 'stations'
   gbox.clearGroup 'radar'
+  gbox.clearGroup 'hud'
   gbox.addObject new Radar
+  gbox.addObject new Hud
   gbox.addObject player
   gbox.addObject current_planet
   if current_planet.itg_station
@@ -42,6 +44,7 @@ flightMode = (reset) ->
     'particles'
     'stations'
     'radar'
+    'hud'
   ]
   for g in groups
     gbox.stopGroup g
@@ -143,13 +146,18 @@ class Player
       return
 
     @going = false
+    #if gbox.keyIsHit 'up'
+    #  sounds.thruster.play()
+    #else if gbox.keyIsReleased 'up'
+    #  sounds.thruster.stop()
     if gbox.keyIsPressed 'up'
       @going = true
       @vx += @ax
       @vy += @ay
-    else if gbox.keyIsPressed('down') or gbox.keyIsPressed('b')
-      @vx *= 1-@afterburn
-      @vy *= 1-@afterburn
+    else
+      if gbox.keyIsPressed('down') or gbox.keyIsPressed('b')
+        @vx *= 1-@afterburn
+        @vy *= 1-@afterburn
 
     if gbox.keyIsPressed 'right'
       @setAng(@ang + TURN_SPEED)
@@ -184,6 +192,7 @@ class Player
 
     groupCollides @, 'foe_shots', (shot) =>
       sounds['hit'+rand(0,3)].play()
+      cam.shake += 5
       i=0
       while i < 3
         addParticle 'fire', @x+@w/2,@y+@h/2,
@@ -212,6 +221,7 @@ class Player
 
   die: ->
     sounds.explode.play()
+    #sounds.thruster.stop()
     @alive = false
     gbox.trashObject @
     message.set choose GAME_OVER_MSGS

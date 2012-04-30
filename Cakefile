@@ -26,6 +26,7 @@ appFiles  = [
   'planets'
   'player'
   'radar'
+  'hud'
   'resources'
   'stations'
   'main'

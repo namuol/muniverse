@@ -13,6 +13,7 @@ stationMode = (station) ->
     'starmap'
     'stations'
     'radar'
+    'hud'
   ]
   for g in stopGroups
     gbox.stopGroup g
@@ -204,8 +205,10 @@ class StationScreen extends Menu
       return
     
     if gbox.keyIsHit 'left'
+      sounds.blip.play()
       @sub_screen -= 1
     else if gbox.keyIsHit 'right'
+      sounds.blip.play()
       @sub_screen += 1
 
     if @sub_screen < 0

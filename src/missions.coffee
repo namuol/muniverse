@@ -48,10 +48,12 @@ class Mission extends MenuItem
     if @accepted
       player.missions.push(@)
       @onaccept()
+      sounds.select.play()
     else
       idx = player.missions.indexOf @
       player.missions.splice(idx,1)
       @onabandon()
+      sounds.cancel.play()
     return true
   doesnt_qualify: ->
     false

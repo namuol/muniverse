@@ -182,12 +182,19 @@ addCamera = ->
       @vy = 0
       @w = W
       @h = H
+      @shake = 0
 
     first: ->
       @vx = (player.x+player.vx*60 - (@x+160)) * 0.05
       @vy = (player.y+player.vy*60 - (@y+160)) * 0.05
       @x += @vx
       @y += @vy
+
+      if @shake > 0.5
+        @x += @shake * rand(-1,1)
+        @y += @shake * rand(-1,1)
+        @shake *= 0.95
+
       c =
         x:@x + @w/2
         y:@y + @h/2
@@ -220,6 +227,7 @@ main = ->
     'baddies'
     'drones'
     'foe_shots'
+    'hud'
     'radar'
     'message'
     'dialog'

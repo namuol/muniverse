@@ -101,6 +101,7 @@ class Resource
       @vy *= 0.005
 
     if gbox.collides player,@
+      sounds.blip.play()
       if !player.cargo[@name]
         player.cargo[@name] = []
       player.cargo[@name].push new CargoItem current_planet.pid
@@ -134,12 +135,14 @@ class ResourceExchanger extends MenuItem
     if not player.cargo[@name]
       player.cargo[@name] = []
     player.cargo[@name].push @station.cargo[@name].pop()
+    sounds.blip.play()
   b: ->
     return if not player.cargo[@name] or player.cargo[@name].length <= 0
     player.funds += @price
     if not @station.cargo[@name]
       @station.cargo[@name] = []
     @station.cargo[@name].push player.cargo[@name].pop()
+    sounds.blip.play()
 
   text: ->
     lamt = ramt = 0

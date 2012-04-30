@@ -12,6 +12,7 @@ starmapMode = ->
     'planetmap'
     'stations'
     'radar'
+    'hud'
   ]
   for g in stopGroups
     gbox.stopGroup g
@@ -166,14 +167,31 @@ class Starmap
 
     y=@cursor.y
     x=@cursor.x
+    vx = 0
+    vy = 0
     if gbox.keyIsPressed 'up'
-      @cursor.y -= 0.5
+      vy -= 1
     else if gbox.keyIsPressed 'down'
-      @cursor.y += 0.5
+      vy += 1
     if gbox.keyIsPressed 'left'
-      @cursor.x -= 0.5
+      vx -= 1
     else if gbox.keyIsPressed 'right'
-      @cursor.x += 0.5
+      vx += 1
+
+    if gbox.keyIsHeldForAtLeast('up',30) or
+       gbox.keyIsHeldForAtLeast('down',30) or
+       gbox.keyIsHeldForAtLeast('left',30) or
+       gbox.keyIsHeldForAtLeast('right',30)
+      @faster = true
+    else if vx == 0 and vy == 0
+      @faster = false
+
+    if @faster
+      vx *= 2
+      vy *= 2
+    @cursor.x += vx
+    @cursor.y += vy
+      
 
     if @closest_star and gbox.keyIsHit 'a'
       if player.fuel() >= @closest_star.dist
@@ -196,8 +214,6 @@ class Starmap
     if !@closest_star or @cursor.x != x or @cursor.y != y
       previous = @closest_star
       @closest_star = @closest(@cursor.x,@cursor.y)
-      if previous != @closest_star
-        sounds.blip.play()
       dx = @current_star.x-@closest_star.x
       dy = @current_star.y-@closest_star.y
       @closest_star.dist = Math.sqrt(dx*dx+dy*dy)*LY_SCALE

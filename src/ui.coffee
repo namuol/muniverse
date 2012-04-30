@@ -78,6 +78,7 @@ class Menu
 
   up: ->
     return if @items.length is 0
+    sounds.blip.play()
     @selected = (@selected - 1) % @items.length
     if @selected < 0
       @selected = @items.length - 1
@@ -85,6 +86,7 @@ class Menu
       @selected = (@selected - 1) % @items.length
   down: ->
     return if @items.length is 0
+    sounds.blip.play()
     @selected = (@selected + 1) % @items.length
     while @items[@selected].disabled
       @selected = (@selected + 1) % @items.length
@@ -130,8 +132,8 @@ class Menu
 
 class MenuItem
   constructor: (@text) ->
-  a: -> # TODO SOUNDS HERE
-  b: ->
+  a: -> sounds.select.play()
+  b: -> sounds.cancel.play()
   c: ->
   render: (x, top, alpha) ->
     gbox.blitText gbox.getBufferContext(),

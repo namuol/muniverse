@@ -12,6 +12,7 @@ planetmapMode = ->
     'starmap'
     'stations'
     'radar'
+    'hud'
   ]
   for g in stopGroups
     gbox.stopGroup g
