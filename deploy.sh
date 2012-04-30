@@ -1,4 +1,5 @@
 #!/bin/sh
+cake build
 mkdir -p deploy
 pushd build
 cp -r akihabara swf *.js *.html *.css *.png *.wav *.mp3 ../deploy/.
