@@ -401,10 +401,6 @@
         url: 'cancel0.wav',
         volume: 50
       }, {
-        id: 'thruster',
-        url: 'thruster.wav',
-        volume: 15
-      }, {
         id: 'explode',
         url: 'explode0.wav',
         volume: 25
