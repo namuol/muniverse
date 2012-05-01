@@ -14,8 +14,8 @@ class Hud
 
     c.fillStyle = 'rgba(255,255,255,0.5)'
     c.fillRect(
-      HUD_X + HUD_SHIELD_X + 2,
-      HUD_Y + HUD_SHIELD_Y + 9,
+      Math.round(HUD_X + HUD_SHIELD_X + 2),
+      Math.round(HUD_Y + HUD_SHIELD_Y + 9),
       HUD_BAR_W,
       HUD_BAR_H
     )
@@ -36,8 +36,8 @@ class Hud
     gbox.blitText c,
       font: 'small'
       text: 'S'
-      dx:HUD_X + HUD_SHIELD_X + frand(-5,5)*h_diff + extrax
-      dy:HUD_Y + HUD_SHIELD_Y + frand(-5,5)*h_diff + extray
+      dx:Math.round(HUD_X + HUD_SHIELD_X + frand(-5,5)*h_diff + extrax)
+      dy:Math.round(HUD_Y + HUD_SHIELD_Y + frand(-5,5)*h_diff + extray)
       dw:16
       dh:16
 
@@ -46,8 +46,8 @@ class Hud
     @h += h_diff
 
     c.fillRect(
-      HUD_X + HUD_SHIELD_X + 2,
-      HUD_Y + HUD_SHIELD_Y + 9,
+      Math.round(HUD_X + HUD_SHIELD_X + 2 + extrax),
+      Math.round(HUD_Y + HUD_SHIELD_Y + 9 + extrax),
       HUD_BAR_W,
-      @h
+      Math.round(@h)
     )
