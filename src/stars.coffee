@@ -162,6 +162,7 @@ class Starmap
 
   first: ->
     if @skip
+      console.log 'skipping!'
       @skip = false
       return
 

@@ -67,7 +67,7 @@ MIN_PIRATE_STATION_PROB = 0.1
 MIN_STATION_DIST = 100
 class Planet
   constructor: (@star, @pid, @num, moon, itg, pirate) ->
-    console.log itg
+    @random = grand(Math.prng(@pid))
     @_x = 0#gbox.getScreenW()/2 - @w/2
     @_y = 0#gbox.getScreenH()/2 - @h/2
 
@@ -76,18 +76,18 @@ class Planet
     @orbit = @star.pcount / @num
     if moon
       @ptype = 'moon'
-      @color = rgba choose planetcolors[2]
-    else if @orbit > GAS_GIANT_MIN_ORBIT and Math.random() < PLANET_CLASSES.gas_giant.prob
+      @color = rgba @random.choose planetcolors[2]
+    else if @orbit > GAS_GIANT_MIN_ORBIT and @random() < PLANET_CLASSES.gas_giant.prob
       @ptype = 'gas_giant'
-      @color = rgba choose planetcolors[1]
+      @color = rgba @random.choose planetcolors[1]
     else
       @ptype = 'rocky'
-      @color = rgba choose planetcolors[0]
+      @color = rgba @random.choose planetcolors[0]
 
     cls = PLANET_CLASSES[@ptype]
-    @radius = frand cls.min_radius, cls.max_radius
+    @radius = @random.frand cls.min_radius, cls.max_radius
 
-    @wealth = Math.random()
+    @wealth = @random()
     max_resource_count = ((Math.PI * @radius*@radius) / 50) * @wealth
     @resources = {}
     @prices = {}
@@ -95,14 +95,14 @@ class Planet
       @resources[name] = []
       @prices[name] = gaus res.mean_price, res.price_stdv
       if res.pirate_mod_min
-        @prices[name] *= frand res.pirate_mod_min,res.pirate_mod_max
+        @prices[name] *= @random.frand res.pirate_mod_min,res.pirate_mod_max
       @prices[name] = Math.max(1,@prices[name])
       resource_wealth = res[@ptype+'_prob']
-      count = Math.round(frand(0, resource_wealth * max_resource_count))
+      count = Math.round(@random.frand(0, resource_wealth * max_resource_count))
       c=0
       while c < count
-        ang = Math.PI*2 * Math.random()
-        r=@radius*frand(res.min_dist,res.max_dist)
+        ang = Math.PI*2 * @random()
+        r=@radius*@random.frand(res.min_dist,res.max_dist)
         x=r*Math.cos(ang)
         y=r*Math.sin(ang)
         @resources[name].push new Resource name, x,y, 0,0, @
@@ -112,19 +112,18 @@ class Planet
     @pirate_station = null
     itg_station_prob = cls.station_prob * @star.itg + MIN_ITG_STATION_PROB
     pirate_station_prob = cls.station_prob * @star.pirate + MIN_PIRATE_STATION_PROB
-    #console.log itg_station_prob
-    #console.log pirate_station_prob
-    if (itg is @num) or Math.random() < itg_station_prob
+
+    if (itg is @num) or @random() < itg_station_prob
       r = MIN_STATION_DIST + @radius * 2
-      ang = Math.random() * 2*Math.PI
+      ang = @random() * 2*Math.PI
       x = @_x + r*Math.cos ang
       y = @_y + r*Math.sin ang
       @itg_station = new Station @, 'itg', x,y
       @itg_station.new_missions()
 
-    if (pirate is @num) or Math.random() < pirate_station_prob
+    if (pirate is @num) or @random() < pirate_station_prob
       r =MIN_STATION_DIST + @radius * 4
-      ang = Math.random() * 2*Math.PI
+      ang = @random() * 2*Math.PI
       x = @_x + r*Math.cos ang
       y = @_y + r*Math.sin ang
       @pirate_station = new Station @, 'pirate', x,y
@@ -132,7 +131,7 @@ class Planet
 
     @moons = []
     return if moon
-    mcount = Math.round(rand(cls.min_moons, cls.max_moons)*(@radius/120))
+    mcount = Math.round(@random.rand(cls.min_moons, cls.max_moons)*(@radius/120))
     letters='abcdefghijklmnopqrstuvqxyz'
     m=0
     while m < mcount

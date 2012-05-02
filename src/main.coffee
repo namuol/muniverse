@@ -283,30 +283,27 @@ main = ->
         gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
           dx:Math.round x % W
           dy:Math.round y % H
+        gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
+          dx:Math.round x % W - W
+          dy:Math.round y % H - H
+        gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
+          dx:Math.round x % W
+          dy:Math.round y % H - H
+        gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
+          dx:Math.round x % W + W
+          dy:Math.round y % H - H
+        gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
+          dx:Math.round x % W + W
+          dy:Math.round y % H
+        gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
+          dx:Math.round x % W
+          dy:Math.round y % H + H
+        gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
+          dx:Math.round x % W - W
+          dy:Math.round y % H + H
+        gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
+          dx:Math.round x % W - W
+          dy:Math.round y % H
 
-        gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-          dx:Math.round x % W - W
-          dy:Math.round y % H - H
-        gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-          dx:Math.round x % W
-          dy:Math.round y % H - H
-        gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-          dx:Math.round x % W + W
-          dy:Math.round y % H - H
-        gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-          dx:Math.round x % W + W
-          dy:Math.round y % H
-        gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-          dx:Math.round x % W + W
-          dy:Math.round y % H + H
-        gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-          dx:Math.round x % W
-          dy:Math.round y % H + H
-        gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-          dx:Math.round x % W - W
-          dy:Math.round y % H + H
-        gbox.blitAll gbox.getBufferContext(), gbox.getImage('bg'),
-          dx:Math.round x % W - W
-          dy:Math.round y % H
   gbox.go()
 window.addEventListener 'load', loadResources, false

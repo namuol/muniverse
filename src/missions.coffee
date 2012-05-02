@@ -114,6 +114,7 @@ class TaxiMission extends CabinDweller
       pnum: station.planet
   text: ->
     super() + 'Taxi-' + @loc_name + '-$'+@price
+
 class CrewMission extends CabinDweller
   type:'crew'
   text: ->

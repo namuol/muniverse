@@ -1,61 +1,61 @@
 RESOURCES =
-  'scrap metal':
-    num:0
-    natural:true
-    tons_per_unit:1
-    gas_giant_prob: 0.1
-    rocky_prob: 0.5
-    moon_prob: 0.75
-    mean_price: 20
-    price_stdv: 2
-    min_dist: 0.5
-    max_dist: 3
-  'lifeforms':
-    num:1
-    natural:true
-    tons_per_unit:0.05
-    gas_giant_prob: 0.05
-    rocky_prob: 0.2
-    moon_prob: 0.1
-    mean_price: 30
-    price_stdv: 4
-    min_dist: 0
-    max_dist: 1
-  'fuel':
-    num:2
-    natural:true
-    tons_per_unit:0.25
-    gas_giant_prob: 0.25
-    rocky_prob: 0.1
-    moon_prob: 0.1
-    mean_price: 5
-    price_stdv: 0.5
-    min_dist: 0
-    max_dist: 1.25
-  'minerals':
-    num:3
-    natural:true
-    tons_per_unit:0.5
-    gas_giant_prob: 0.05
-    rocky_prob: 0.5
-    moon_prob: 0.2
-    mean_price: 5
-    price_stdv: 1
-    min_dist: 0
-    max_dist: 1
-  'narcotics':
-    num:4
-    natural:false
-    tons_per_unit:0.01
-    gas_giant_prob: 0
-    rocky_prob: 0
-    moon_prob: 0
-    mean_price: 50
-    price_stdv: 9
-    pirate_mod_min: 0.66
-    pirate_mod_max: 0.9
-    min_dist: 4
-    max_dist: 5
+    'scrap metal':
+      num:0
+      natural:true
+      tons_per_unit:1
+      gas_giant_prob: 0.1
+      rocky_prob: 0.5
+      moon_prob: 0.75
+      mean_price: 20
+      price_stdv: 2
+      min_dist: 0.5
+      max_dist: 3
+    'lifeforms':
+      num:1
+      natural:true
+      tons_per_unit:0.05
+      gas_giant_prob: 0.05
+      rocky_prob: 0.2
+      moon_prob: 0.1
+      mean_price: 30
+      price_stdv: 4
+      min_dist: 0
+      max_dist: 1
+    'fuel':
+      num:2
+      natural:true
+      tons_per_unit:0.25
+      gas_giant_prob: 0.25
+      rocky_prob: 0.1
+      moon_prob: 0.1
+      mean_price: 5
+      price_stdv: 0.5
+      min_dist: 0
+      max_dist: 1.25
+    'minerals':
+      num:3
+      natural:true
+      tons_per_unit:0.5
+      gas_giant_prob: 0.05
+      rocky_prob: 0.5
+      moon_prob: 0.2
+      mean_price: 5
+      price_stdv: 1
+      min_dist: 0
+      max_dist: 1
+    'narcotics':
+      num:4
+      natural:false
+      tons_per_unit:0.01
+      gas_giant_prob: 0
+      rocky_prob: 0
+      moon_prob: 0
+      mean_price: 50
+      price_stdv: 9
+      pirate_mod_min: 0.66
+      pirate_mod_max: 0.9
+      min_dist: 4
+      max_dist: 5
 
 class CargoItem
   constructor: (@origin) ->

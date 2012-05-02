@@ -2,7 +2,7 @@ clamp = (num, min, max) ->
   Math.min(Math.max(num, min), max)
 
 grand = (random) ->
-  return {
+  funcs =
     frand: (min, max) ->
       min + random()*(max-min)
     rand: (min, max) ->
@@ -11,7 +11,12 @@ grand = (random) ->
       # approximates Box-Muller transform:
       rnd = (random()*2-1)+(random()*2-1)+(random()*2-1)
       return rnd*stdv + mean
-  }
+    choose: (array) -> array[@rand(0,array.length-1)]
+
+  for own n,f of funcs
+    random[n] = f
+
+  return random
 
 frand = (min, max) -> min + Math.random()*(max-min)
 rand = (min, max) -> Math.round(frand(min, max))

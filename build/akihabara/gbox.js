@@ -246,6 +246,7 @@ var gbox={
 	_groups:[],
 	_renderorder:[],
 	_groupplay:{},
+  _grouppause:{},
 	_actionqueue:["first","then","blit","after"], // initialize is executed once
 	_mspf:0,
 	_fps:0,
@@ -526,6 +527,7 @@ var gbox={
 			gbox._objects[g][obj].initialized = true;
 			delete gbox._objects[g][obj].initialize;
 		}
+    if (a !== 'blit' && gbox._grouppause[g]) return;
 		if (gbox._objects[g][obj][a]) gbox._objects[g][obj][a](obj,a);
 	},
 
@@ -851,10 +853,12 @@ var gbox={
 	setGroups:function(g){
 		this._groups=g;
 		this._groupplay[gbox.ZINDEX_LAYER]=true;
+		this._grouppause[gbox.ZINDEX_LAYER]=true;
 		for (var i=0;i<g.length;i++)
 			if (!this._objects[g[i]]) {
 				this._objects[g[i]]={};
 				this._groupplay[g[i]]=true;
+				this._grouppause[g[i]]=false;
 				this._renderorder[i]=g[i];
 			}
 	},
@@ -880,7 +884,19 @@ var gbox={
   * @param {String} gid The id of the group.
   */
 	stopGroup:function(gid){this._groupplay[gid]=false;},
-  
+
+	pauseGroup:function(gid){this._grouppause[gid]=true;},
+	unpauseGroup:function(gid){this._grouppause[gid]=false;},
+
+  pauseAllGroups:function() {
+    for(var i=0; i<this._groups.length; ++i)
+      this._grouppause[this._groups[i]] = true;
+  },
+  unpauseAllGroups:function() {
+    for(var i=0; i<this._groups.length; ++i)
+      this._grouppause[this._groups[i]] = false;
+  },
+ 
   /**
   * Toggles a group between enabled and disabled status.
   * @param {String} gid The id of the group.

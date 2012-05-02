@@ -125,10 +125,8 @@ class Shot
 
   die: ->
     gbox.trashObject @
-    console.log 'shotDie'
 
   first: ->
-    console.log 'shotTick'
     @x += @vx
     @y += @vy
     ++@tick

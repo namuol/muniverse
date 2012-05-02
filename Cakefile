@@ -49,7 +49,7 @@ task 'build', 'Build single application file from source files', ->
   process = ->
     fs.writeFile 'build/game.coffee', appContents.join('\n\n'), 'utf8', (err) ->
       throw err if err
-      exec 'coffee --compile build/game.coffee', (err, stdout, stderr) ->
+      exec 'coffee --compile -b build/game.coffee', (err, stdout, stderr) ->
         throw err if err
         console.log stdout + stderr
         fs.unlink 'build/game.coffee', (err) ->

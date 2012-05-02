@@ -1,3 +1,4 @@
+stationscreen = {}
 stationMode = (station) ->
 
   stopGroups = [
@@ -157,7 +158,7 @@ STATION_SUB_SCREENS = [
 ]
 
 ITG_INSPECT_PROB = 0.5
-class StationScreen extends Menu
+class StationScreen extends VMenu
   group: 'stationscreen'
   constructor: (station) ->
     super()
@@ -187,9 +188,11 @@ class StationScreen extends Menu
 
     if @station.name is 'itg' and (ITG_INSPECT_PROB*player.itg_inspect_mod>frand(0,1))
       if player.cargo.narcotics and player.cargo.narcotics.length > 0
+        ncount = player.cargo.narcotics.length
         player.cargo.narcotics = []
-        message.add 'Illegal narcotics were found...'
-        message.add '...they have been confiscated.'
+        d = new Dialog "ITG probe-drones have detected #{ncount} units of illegal narcotics aboard your vessel during a random search. \"In accordance with ITG regulation L5424:IXV:a, the offending materials have been 'CONFISCATED' and will be 'DESTROYED' immediately\"."
+        d.items.push new DialogChoice '[Press Z to Continue]'
+        setDialog(d)
 
   c: ->
     gbox.trashObject @

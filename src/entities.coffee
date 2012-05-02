@@ -135,8 +135,6 @@ class Baddie
           addParticle 'wreckage', @x+@w/2,@y+@h/2,
             @vx+frand(-0.5,0.5),@vy+frand(-.5,.5)
           ++i
-      console.log @x
-      console.log @y
       shot.die()
   die: ->
     gbox.trashObject @
