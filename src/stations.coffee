@@ -91,7 +91,10 @@ class Station
 
     @prices = {}
     for own n,p of @planet.prices
-      @prices[n] = Math.round(gaus(p, (RESOURCES[n].price_stdv/2))*100)/100
+      @prices[n] = @planet.random.gaus(p, (RESOURCES[n].price_stdv/3))
+      if @name is 'pirate' and RESOURCES[n].pirate_mod_min
+        @prices[n] *= @planet.random.frand(RESOURCES[n].pirate_mod_min,RESOURCES[n].pirate_mod_max)
+      @prices[n] = Math.round(@prices[n]*100)/100
   w:32
   h:32
   die: ->

@@ -46,6 +46,12 @@ class Star
     @radius = random.frand MIN_STAR_RAD, MAX_STAR_RAD
     @planets = []
     p=0
+
+    @prices = {}
+    for own name,res of RESOURCES
+      @prices[name] = gaus res.mean_price, res.price_stdv
+      @prices[name] = Math.max(1,@prices[name])
+
     while p < @pcount
       @planets.push new Planet @,
         "#{@sid}.P-#{p}",
@@ -139,6 +145,7 @@ class Starmap
         star: star
         planet: planet
       ++i
+
   _factor: (x,y,pirate) ->
     regions = undefined
     if pirate

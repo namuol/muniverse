@@ -93,10 +93,7 @@ class Planet
     @prices = {}
     for own name,res of RESOURCES
       @resources[name] = []
-      @prices[name] = gaus res.mean_price, res.price_stdv
-      if res.pirate_mod_min
-        @prices[name] *= @random.frand res.pirate_mod_min,res.pirate_mod_max
-      @prices[name] = Math.max(1,@prices[name])
+      @prices[name] = @random.gaus @star.prices[name], (RESOURCES[name].price_stdv/2.5)
       resource_wealth = res[@ptype+'_prob']
       count = Math.round(@random.frand(0, resource_wealth * max_resource_count))
       c=0
