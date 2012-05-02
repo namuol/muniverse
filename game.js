@@ -1310,11 +1310,18 @@ Star = (function() {
   }
 
   Star.prototype.generate_planets = function() {
-    var p, random, _results;
+    var name, p, random, res, _results;
     random = grand(Math.prng(BASE_SEED + '.' + this.sector.x + '.' + this.sector.y + '.' + this.x + '.' + this.y));
     this.radius = random.frand(MIN_STAR_RAD, MAX_STAR_RAD);
     this.planets = [];
     p = 0;
+    this.prices = {};
+    for (name in RESOURCES) {
+      if (!__hasProp.call(RESOURCES, name)) continue;
+      res = RESOURCES[name];
+      this.prices[name] = gaus(res.mean_price, res.price_stdv);
+      this.prices[name] = Math.max(1, this.prices[name]);
+    }
     _results = [];
     while (p < this.pcount) {
       this.planets.push(new Planet(this, "" + this.sid + ".P-" + p, p, false, this.known_itg_station, this.known_pirate_station));
@@ -1711,11 +1718,7 @@ Planet = (function() {
       if (!__hasProp.call(RESOURCES, name)) continue;
       res = RESOURCES[name];
       this.resources[name] = [];
-      this.prices[name] = gaus(res.mean_price, res.price_stdv);
-      if (res.pirate_mod_min) {
-        this.prices[name] *= this.random.frand(res.pirate_mod_min, res.pirate_mod_max);
-      }
-      this.prices[name] = Math.max(1, this.prices[name]);
+      this.prices[name] = this.random.gaus(this.star.prices[name], RESOURCES[name].price_stdv / 2.5);
       resource_wealth = res[this.ptype + '_prob'];
       count = Math.round(this.random.frand(0, resource_wealth * max_resource_count));
       c = 0;
@@ -2808,7 +2811,11 @@ Station = (function() {
     for (n in _ref) {
       if (!__hasProp.call(_ref, n)) continue;
       p = _ref[n];
-      this.prices[n] = Math.round(gaus(p, RESOURCES[n].price_stdv / 2) * 100) / 100;
+      this.prices[n] = this.planet.random.gaus(p, RESOURCES[n].price_stdv / 3);
+      if (this.name === 'pirate' && RESOURCES[n].pirate_mod_min) {
+        this.prices[n] *= this.planet.random.frand(RESOURCES[n].pirate_mod_min, RESOURCES[n].pirate_mod_max);
+      }
+      this.prices[n] = Math.round(this.prices[n] * 100) / 100;
     }
   }
 
