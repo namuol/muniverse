@@ -94,6 +94,7 @@ class Planet
     for own name,res of RESOURCES
       @resources[name] = []
       @prices[name] = @random.gaus @star.prices[name], (RESOURCES[name].price_stdv/2.5)
+      ###
       resource_wealth = res[@ptype+'_prob']
       count = Math.round(@random.frand(0, resource_wealth * max_resource_count))
       c=0
@@ -104,6 +105,7 @@ class Planet
         y=r*Math.sin(ang)
         @resources[name].push new Resource name, x,y, 0,0, @
         ++c
+      ###
 
     @itg_station = null
     @pirate_station = null

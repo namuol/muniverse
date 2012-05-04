@@ -19,18 +19,38 @@ html ->
   body ->
     div id:'instructions', ->
       h3 -> 'Instructions:'
+      p 'This is a sandbox, open-world game. There is no "win" condition.'
+      p 'Please don\'t be horrified by the wall of text below. These are detailed instructions for your reference, not something you need to read all-at-once. Thanks!'
+      ul ->
+        li -> 'Travel from star system to star system via the Star Map.'
+        li -> 'Selecting a star opens the Planet Map, where you choose your specific destination within that system (a planet or moon).'
+        li ->
+          text 'Planets/moons may have Space Stations; here you can:'
+          ul ->
+            li -> 'Buy/Sell goods'
+            li -> 'Pick up Taxi Passengers'
+            li -> 'Upgrade your ship'
+        li -> 'You can also encounter other ships. Be aware that not all ships will attack you unless provoked.'
       h4 -> 'Star Map:'
       ul ->
-        li -> "Arrow Keys move cursor to select star system, highlighted with green circle."
-        li -> "Large turquoise circle is the range of your FTL fuel."
-        li -> "'Z' selects star system"
+        li -> "Arrow Keys move crosshair that highlights the nearest star system."
+        li -> "'Z' selects the highlighted star system and enters Planet Map"
         li -> "'C' returns to Flight Mode"
+        li -> "Large turquoise circle is the range of your FTL fuel. Buy or collect more fuel to expand your flight-range."
+        li -> "Small pink circle is your current star system."
+        li -> "Small light-green circle is your destination star system."
+        li -> "Small yellow circles represent Taxi Passenger destinations."
+        li -> "Large blue circles are 'protected' zones. Less likely to encounter hostiles here, but also less likely to find Pirate stations."
+        li -> "Large red circles are 'piracy' zones. More likely to encounter hostiles here, but also more likely to find Pirate stations."
 
       h4 -> "Planet Map:"
       ul ->
-        li -> "Arrow Keys move cursor to select a planet you wish to visit."
+        li -> "Arrow Keys move cursor to select a planet or moon you wish to visit."
         li -> "'Z' travels to that planet (instantaneously) and puts you in Flight Mode"
-        li -> "'C' returns to Star Map"
+        li -> "'C' opens Star Map"
+        li -> "Yellow triangles represent Taxi Passenger destinations."
+        li -> "Pink triangle represents your current location, if any."
+        li -> "Light-green represents your destination planet/moon."
 
       h4 -> "Flight Mode:"
       ul ->
@@ -39,8 +59,10 @@ html ->
           ul ->
             li -> "Down is afterburner ('brake')."
         li -> "'Z' -- Fire weapon."
+        li -> "Grey space stations are ITG (Intergalactic Trade Guard) compliant -- narcotics *may* be detected and confiscated if you bring them here."
+        li -> "Brown space stations are Pirate stations -- anything goes, and narcotics have lower prices."
         li -> "\"Park\" over a space station for a few seconds to enter the Station Screen"
-        li -> "Blinking pixels on and around planets are resources -- fly into them to collect them."
+        #li -> "Blinking pixels on and around planets are resources -- fly into them to collect them."
 
       h4 -> "Station Screen:"
       ul ->
@@ -50,11 +72,12 @@ html ->
           text "Left/Right change screen (Cargo[trade], Missions, Hangar)"
           h5 -> 'Cargo'
           ul ->
-            li -> "'Z' - Buy selected good"
-            li -> "'X' - Sell selected good"
+            li -> "'Z' - Buy unit of selected good"
+            li -> "'X' - Sell unit of selected good"
           h5 -> "Missions"
           ul ->
             li -> "'Z' - Accept/Abandon selected mission"
+            li -> 'Open the star map and look for yellow circles to locate your passengers\'s destinations.'
           h5 -> "Hangar"
           ul ->
             li -> "'Z' - Purchase selected upgrade"
