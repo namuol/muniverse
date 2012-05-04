@@ -1688,7 +1688,7 @@ Planet = (function() {
   Planet.name = 'Planet';
 
   function Planet(star, pid, num, moon, itg, pirate) {
-    var ang, c, cls, count, itg_station_prob, letters, m, max_resource_count, mcount, name, pirate_station_prob, r, res, resource_wealth, x, y;
+    var ang, cls, itg_station_prob, letters, m, max_resource_count, mcount, name, pirate_station_prob, r, res, x, y;
     this.star = star;
     this.pid = pid;
     this.num = num;
@@ -1719,17 +1719,19 @@ Planet = (function() {
       res = RESOURCES[name];
       this.resources[name] = [];
       this.prices[name] = this.random.gaus(this.star.prices[name], RESOURCES[name].price_stdv / 2.5);
-      resource_wealth = res[this.ptype + '_prob'];
-      count = Math.round(this.random.frand(0, resource_wealth * max_resource_count));
-      c = 0;
-      while (c < count) {
-        ang = Math.PI * 2 * this.random();
-        r = this.radius * this.random.frand(res.min_dist, res.max_dist);
-        x = r * Math.cos(ang);
-        y = r * Math.sin(ang);
-        this.resources[name].push(new Resource(name, x, y, 0, 0, this));
-        ++c;
-      }
+      /*
+            resource_wealth = res[@ptype+'_prob']
+            count = Math.round(@random.frand(0, resource_wealth * max_resource_count))
+            c=0
+            while c < count
+              ang = Math.PI*2 * @random()
+              r=@radius*@random.frand(res.min_dist,res.max_dist)
+              x=r*Math.cos(ang)
+              y=r*Math.sin(ang)
+              @resources[name].push new Resource name, x,y, 0,0, @
+              ++c
+      */
+
     }
     this.itg_station = null;
     this.pirate_station = null;
