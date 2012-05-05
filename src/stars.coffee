@@ -113,21 +113,25 @@ class Starmap
     @stars = []
     # And render the starmap (just once)
     el = document.getElementById('starmap')
-    c = document.getElementById('starmap').getContext '2d'
-    c.drawImage gbox.getImage('starmap_gui'), 0,0
-    @starmap = c.getImageData 0,0, W,H
+    @starmap = document.getElementById('starmap')
+    console.log @starmap
+    ctx = @starmap.getContext '2d'
+    #@starmap.drawImage gbox.getImage('starmap_gui'), 0,0
+    ctx.clearRect 0,0, W,H
+    map = ctx.getImageData 0,0, W,H
 
     i = 0
     starcount = MAX_STAR_COUNT * density
     while i < starcount
-      color = choose starcolors
       x = frand 1, W-1
-      y = frand 1, H-16-1
-      star = new Star @sector, i, x,y, color, @itg_factor(x,y), @pirate_factor(x,y)
-      @stars.push star
-      setPixel @starmap, Math.round(x),Math.round(y), color[0],color[1],color[2],color[3]
+      y = frand 17, H-17
+      if getPixel(map, Math.round(x),Math.round(y))[3] <= 0
+        color = choose starcolors
+        star = new Star @sector, i, x,y, color, @itg_factor(x,y), @pirate_factor(x,y)
+        setPixel map, Math.round(x),Math.round(y), color[0],color[1],color[2],color[3]
+        @stars.push star
       ++i
-    c.putImageData @starmap, 0,0
+    ctx.putImageData map, 0,0
 
     @known_itg_stations = []
     @known_pirate_stations = []
@@ -226,10 +230,10 @@ class Starmap
       dy = @current_star.y-@closest_star.y
       @closest_star.dist = Math.sqrt(dx*dx+dy*dy)*LY_SCALE
 
-  blit: ->
-    c = gbox.getBufferContext()
+  render: (c) ->
     if c
-      c.putImageData @starmap, 0, 0
+      c.drawImage gbox.getImage('starmap_gui'), 0,0
+      c.drawImage @starmap, 0, 0
 
       for r in @itg_regions
         circle c, 'blue',
@@ -278,6 +282,10 @@ class Starmap
             tile: 3
             dx: Math.round(m.location.star.x)-4
             dy: Math.round(m.location.star.y)-4
+
+  blit: ->
+    c = gbox.getBufferContext()
+    @render(c)
 
   group: 'starmap'
   closest: (x,y) ->

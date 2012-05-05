@@ -124,6 +124,7 @@ class Resource
 
 class ResourceExchanger extends MenuItem
   constructor: (@name, @station) ->
+    super @name
     @resource = RESOURCES[@name]
     @price = @station.prices[@name]
   a: ->
@@ -143,11 +144,57 @@ class ResourceExchanger extends MenuItem
       @station.cargo[@name] = []
     @station.cargo[@name].push player.cargo[@name].pop()
     sounds.blip.play()
+  
+  render: (x, y, alpha) ->
+    c = gbox.getBufferContext()
+    return if not c
 
-  text: ->
     lamt = ramt = 0
     if player.cargo[@name]
       lamt = player.cargo[@name].length
     if @station.cargo[@name]
       ramt = @station.cargo[@name].length
-    "#{@name}[#{lamt}] <-$#{@price}-> [#{ramt}]"
+
+    gbox.blitText c,
+      font: 'small'
+      text: @name
+      dx:x + 16
+      dy:y
+      alpha: alpha
+      dw:W
+      dh:LINE_HEIGHT
+      halign: gbox.ALIGN_LEFT
+      valign: gbox.ALIGN_TOP
+
+    gbox.blitText c,
+      font: 'small'
+      text: "[#{lamt}]"
+      dx:x + 128
+      dy:y
+      alpha: alpha
+      dw:W - 128
+      dh:LINE_HEIGHT
+      halign: gbox.ALIGN_LEFT
+      valign: gbox.ALIGN_TOP
+
+    gbox.blitText c,
+      font: 'small'
+      text: "<-$#{@price}->"
+      dx:x + 128
+      dy:y
+      alpha: alpha
+      dw:W - 128
+      dh:LINE_HEIGHT
+      halign: gbox.ALIGN_CENTER
+      valign: gbox.ALIGN_TOP
+
+    gbox.blitText c,
+      font: 'small'
+      text: "[#{ramt}]"
+      dx:x + 128
+      dy:y
+      alpha: alpha
+      dw:W - 128
+      dh:LINE_HEIGHT
+      halign: gbox.ALIGN_RIGHT
+      valign: gbox.ALIGN_TOP

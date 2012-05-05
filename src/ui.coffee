@@ -45,6 +45,7 @@ class Message
   set: (str, lifespan=240, person) ->
     @msgs = []
     @add str, lifespan, person
+
   first: ->
     return if not @visible
 
@@ -54,11 +55,15 @@ class Message
         if @msgs.length is 0
           @visible = false
 
-  blit: (x,y) ->
+  blit: ->
     return if not @visible
+    c = gbox.getBufferContext()
+    return if not c
+    c.fillStyle = 'rgba(0,0,0, 0.75)'
+    c.fillRect 0,0, W,18
     if @msgs[0].person
       @msgs[0].person.render_face(1,1,1, true)
-    gbox.blitText gbox.getBufferContext(),
+    gbox.blitText c,
       font: 'small'
       text: @msgs[0].str
       dx:17
@@ -119,13 +124,15 @@ class VMenu extends Menu
       @next()
 
   render: (x,yoff) ->
-    height = 17 * @items.length
+    height = 0
+    for item in @items
+      height += item.h + 1
     top = H/2 - height/2 + yoff
-    top -= 17
+    top -= @items[0].h
     num = 0
     for item in @items
-      top += 17
-      
+      top += item.h + 1
+       
       if !item.disabled
         if @selected == num
           alpha = 1
@@ -165,9 +172,10 @@ class HMenu extends Menu
 
 class MenuItem
   constructor: (@name) ->
+    @h = 16
   text: -> @name
-  a: -> sounds.select.play()
-  b: -> sounds.cancel.play()
+  a: -> #sounds.select.play()
+  b: -> #sounds.cancel.play()
   c: ->
   render: (x, top, alpha) ->
     gbox.blitText gbox.getBufferContext(),
@@ -214,7 +222,7 @@ class Dialog extends HMenu
         halign: gbox.ALIGN_LEFT
         valign: gbox.ALIGN_TOP
       ++n
-    @render(0,0)
+    @render(0,4)
 
     @post_blit(c)
 

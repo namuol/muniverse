@@ -23,6 +23,7 @@ FAILURE_MESSAGES = [
 ]
 class Mission extends MenuItem
   constructor: (@person) ->
+    super 'MISSION'
     @accepted = false
   success: ->
     idx = player.missions.indexOf @
@@ -72,7 +73,8 @@ NO_CABINS_MESSAGES = [
   'You\'ll need to make room for me.'
 ]
 class CabinDweller extends Mission
-  constructor: (@person, @star) ->
+  constructor: (@person) ->
+    super @person
   success: ->
     super()
     idx = player.cabins.indexOf @person
@@ -96,7 +98,8 @@ FUGITIVE_TAXI_BONUS = 1.25
 class TaxiMission extends CabinDweller
   type:'taxi'
   constructor: (@person) ->
-    super(@person)
+    super @person
+
     @price = RESOURCES.fuel.mean_price * 1.25
     if @person.fugitive
       @price *= FUGITIVE_TAXI_BONUS
@@ -105,7 +108,7 @@ class TaxiMission extends CabinDweller
     else
       @loc_name = 'ITG st.'
       station = (choose starmap.known_itg_stations)
-
+    
     @star = station.star
     @price *= starmap.current_star.distance_to @star
     @price = Math.round(@price*100)/100
@@ -119,5 +122,3 @@ class CrewMission extends CabinDweller
   type:'crew'
   text: ->
     super() + 'Crew'
-
-

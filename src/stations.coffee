@@ -128,60 +128,55 @@ class Station
       dx: Math.round(@x-cam.x)
       dy: Math.round(@y+@yoff-cam.y)
 
+drawFunds = ->
+  gbox.blitText gbox.getBufferContext(),
+    font: 'small'
+    text: 'FUNDS: $' + Math.round(player.funds*100)/100
+    dx:2
+    dy:H-12
+    dw:W
+    dh:16
+    halign: gbox.ALIGN_LEFT
+    valign: gbox.ALIGN_TOP
+
+
 STATION_SUB_SCREENS = [
     name:'Cargo'
     bg:'starmap_gui'
-    extra_blit: (c) ->
-      gbox.blitText gbox.getBufferContext(),
-        font: 'small'
-        text: 'FUNDS: $' + Math.round(player.funds*100)/100
-        dx:2
-        dy:16
-        dw:W
-        dh:16
-        halign: gbox.ALIGN_LEFT
-        valign: gbox.ALIGN_TOP
+    extra_blit: drawFunds
   ,
     name:'Missions'
     bg:'starmap_gui'
   ,
     name:'Hangar'
     bg:'starmap_gui'
-    extra_blit: (c) ->
-      gbox.blitText gbox.getBufferContext(),
-        font: 'small'
-        text: 'FUNDS: $' + Math.round(player.funds*100)/100
-        dx:2
-        dy:16
-        dw:W
-        dh:16
-        halign: gbox.ALIGN_LEFT
-        valign: gbox.ALIGN_TOP
-
+    extra_blit: drawFunds
 ]
 
 ITG_INSPECT_PROB = 0.5
-class StationScreen extends VMenu
+class StationScreen extends HMenu
   group: 'stationscreen'
   constructor: (station) ->
     super()
     @station = station
     @skip = false
     @sub_screen = 0
-    @sub_items = []
+    @sub_menus = []
     i=0
     for scr in STATION_SUB_SCREENS
-      @sub_items.push []
+      @items.push new MenuItem scr.name
+      @sub_menus.push new VMenu
       switch scr.name
         when 'Cargo'
           for own name,r of RESOURCES
-            @sub_items[i].push new ResourceExchanger name, @station
+            @sub_menus[i].items.push new ResourceExchanger name, @station
         when 'Missions'
-          @sub_items[i] = @station.missions
+          @sub_menus[i].items = @station.missions
         when 'Hangar'
           for eq in EQUIPMENT
-            @sub_items[i].push new Equipment eq
+            @sub_menus[i].items.push new Equipment eq
       ++i
+    @current_sub_menu = @sub_menus[@selected]
     tmp = player.missions.slice(0)
     for m in tmp
       switch m.type
@@ -209,19 +204,10 @@ class StationScreen extends VMenu
     if @skip
       @skip = false
       return
-    
-    if gbox.keyIsHit 'left'
-      sounds.blip.play()
-      @sub_screen -= 1
-    else if gbox.keyIsHit 'right'
-      sounds.blip.play()
-      @sub_screen += 1
-
-    if @sub_screen < 0
-      @sub_screen = STATION_SUB_SCREENS.length-1
-    @sub_screen = @sub_screen % STATION_SUB_SCREENS.length
-    @items = @sub_items[@sub_screen]
     @update()
+    
+    @current_sub_menu = @sub_menus[@selected]
+    @current_sub_menu.update()
 
   blit: ->
     c = gbox.getBufferContext()
@@ -230,29 +216,9 @@ class StationScreen extends VMenu
       dx:0
       dy:0
 
-    extra = STATION_SUB_SCREENS[@sub_screen].extra_blit
+    extra = STATION_SUB_SCREENS[@selected].extra_blit
     if extra
       extra c
     
-    left = 2
-    i=0
-    for s in STATION_SUB_SCREENS
-      n=s.name
-      alpha = 0.5
-      if @sub_screen is i
-        alpha = 1
-      w=(n.length+1)*8
-      gbox.blitText gbox.getBufferContext(),
-        font: 'small'
-        text: n
-        dx:left
-        dy:H-12
-        dw:w
-        dh:16
-        halign: gbox.ALIGN_LEFT
-        valign: gbox.ALIGN_TOP
-        alpha:alpha
-      left += w
-      ++i
-
-    @render(0,0)
+    @current_sub_menu.render(0,0)
+    @render(0,4)

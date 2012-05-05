@@ -73,6 +73,7 @@ EQUIPMENT = [
 
 class Equipment extends MenuItem
   constructor: (@eq) ->
+    super @eq
   a: ->
     if @eq.price
       if player.funds < @eq.price()
