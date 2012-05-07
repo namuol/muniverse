@@ -2895,7 +2895,8 @@ RESOURCES = {
     mean_price: 20,
     price_stdv: 2,
     min_dist: 0.5,
-    max_dist: 3
+    max_dist: 3,
+    min_count: 10
   },
   'lifeforms': {
     num: 1,
@@ -2907,7 +2908,8 @@ RESOURCES = {
     mean_price: 30,
     price_stdv: 4,
     min_dist: 0,
-    max_dist: 1
+    max_dist: 1,
+    min_count: 0
   },
   'fuel': {
     num: 2,
@@ -2919,7 +2921,8 @@ RESOURCES = {
     mean_price: 5,
     price_stdv: 0.5,
     min_dist: 0,
-    max_dist: 1.25
+    max_dist: 1.25,
+    min_count: 20
   },
   'minerals': {
     num: 3,
@@ -2931,7 +2934,8 @@ RESOURCES = {
     mean_price: 5,
     price_stdv: 1,
     min_dist: 0,
-    max_dist: 1
+    max_dist: 1,
+    min_count: 0
   },
   'narcotics': {
     num: 4,
@@ -2945,7 +2949,8 @@ RESOURCES = {
     pirate_mod_min: 0.66,
     pirate_mod_max: 0.9,
     min_dist: 4,
-    max_dist: 5
+    max_dist: 5,
+    min_count: 0
   }
 };
 
@@ -3225,6 +3230,7 @@ Station = (function() {
         resource_wealth = frand(0, 1);
         count = 50 * frand(0, this.planet.star.itg + this.planet.star.pirate);
       }
+      count += res.min_count;
       c = 0;
       _results.push((function() {
         var _results1;
