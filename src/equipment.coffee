@@ -47,10 +47,10 @@ EQUIPMENT =
     name: 'Afterburner'
     levels: [
         price: -> 2000,
-        val: 0.005
+        val: 0.008
       ,
         price: -> 15000,
-        val: 0.01
+        val: 0.015
       ,
         price: -> 60000
         val: 0.03

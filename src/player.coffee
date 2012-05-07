@@ -160,7 +160,7 @@ class Player
       @vx += @ax
       @vy += @ay
     else
-      if gbox.keyIsPressed('down') or gbox.keyIsPressed('b')
+      if not (gbox.keyIsPressed('down') or gbox.keyIsPressed('b'))
         @vx *= 1-@afterburn
         @vy *= 1-@afterburn
 
