@@ -82,7 +82,12 @@ html ->
             li -> "'X' - Sell unit of selected good"
           h5 -> "Missions"
           ul ->
-            li -> "'Z' - Accept/Abandon selected mission"
+            li ->
+              text "'Z' - View mission details (starmap and briefing screens)"
+              ul ->
+                li "'Z' - Accept mission"
+                li "'X' - Abandon mission"
+                li "'C' - Return to Missions"
             li -> 'Open the star map and look for yellow circles to locate your passengers\'s destinations.'
           h5 -> "Hangar"
           ul ->
