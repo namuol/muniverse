@@ -231,60 +231,92 @@ class Starmap
       @closest_star.dist = Math.sqrt(dx*dx+dy*dy)*LY_SCALE
 
   render: (c) ->
-    if c
-      c.drawImage gbox.getImage('starmap_gui'), 0,0
-      c.drawImage @starmap, 0, 0
+    c.drawImage gbox.getImage('starmap_gui'), 0,0
 
-      for r in @itg_regions
-        circle c, 'blue',
-          Math.round(r.x),
-          Math.round(r.y),
-          r.radius
-      for r in @pirate_regions
-        circle c, 'red',
-          Math.round(r.x),
-          Math.round(r.y),
-          r.radius
+    @render_fuel_range c
+    @render_itg_regions c
+    @render_pirate_regions c
+    
+    if @current_star
+      @render_current_star c
+      @render_cursor c
+      @render_star_info c, @closest_star
 
-      if @current_star
-        gbox.blitText c,
-          font: 'small'
-          text:"LY: #{Math.round(@closest_star.dist*100)/100}"
-          dx:1
-          dy:H-12
-          dw:64
-          dh:16
+    @render_current_missions c
 
-        gbox.blitTile c,
-          tileset: 'cursors'
-          tile: 1
-          dx: Math.round(@current_star.x)-4
-          dy: Math.round(@current_star.y)-4
-        gbox.blitTile c,
-          tileset: 'cursors'
-          tile: 0
-          dx: Math.round(@cursor.x)-4
-          dy: Math.round(@cursor.y)-4
-        gbox.blitTile c,
-          tileset: 'cursors'
-          tile: 2
-          dx: Math.round(@closest_star.x)-4
-          dy: Math.round(@closest_star.y)-4
-        circle c, '#33e5ff',
-          Math.round(@current_star.x),
-          Math.round(@current_star.y),
-          player.fuel()/LY_SCALE
+    @render_map c
 
-      for m in player.missions
-        if m.location
-          gbox.blitTile c,
-            tileset: 'cursors'
-            tile: 3
-            dx: Math.round(m.location.star.x)-4
-            dy: Math.round(m.location.star.y)-4
+  render_current_missions: (c) ->
+    for m in player.missions
+      @render_mission c, m
+
+  render_map: (c) ->
+    c.drawImage @starmap, 0, 0
+
+  render_mission: (c, m) ->
+    if m.location
+      gbox.blitTile c,
+        tileset: 'cursors'
+        tile: 3
+        dx: Math.round(m.location.star.x)-4
+        dy: Math.round(m.location.star.y)-4
+
+  render_itg_regions: (c) ->
+    for r in @itg_regions
+      circle c, 'blue',
+        Math.round(r.x),
+        Math.round(r.y),
+        r.radius
+
+  render_pirate_regions: (c) ->
+    for r in @pirate_regions
+      circle c, 'red',
+        Math.round(r.x),
+        Math.round(r.y),
+        r.radius
+
+  render_star_info: (c, star) ->
+    if not star.dist
+      star.dist = @current_star.distance_to star
+    gbox.blitText c,
+      font: 'small'
+      text:"LY: #{Math.round(star.dist*100)/100}"
+      dx:1
+      dy:H-12
+      dw:64
+      dh:16
+
+  render_current_star: (c) ->
+    gbox.blitTile c,
+      tileset: 'cursors'
+      tile: 1
+      dx: Math.round(@current_star.x)-4
+      dy: Math.round(@current_star.y)-4
+
+  render_cursor: (c) ->
+    gbox.blitTile c,
+      tileset: 'cursors'
+      tile: 0
+      dx: Math.round(@cursor.x)-4
+      dy: Math.round(@cursor.y)-4
+    @render_selected_star c, @closest_star
+  
+  render_selected_star: (c, star) ->
+    gbox.blitTile c,
+      tileset: 'cursors'
+      tile: 2
+      dx: Math.round(star.x)-4
+      dy: Math.round(star.y)-4
+
+  render_fuel_range: (c) ->
+    circle c, '#33e5ff',
+      Math.round(@current_star.x),
+      Math.round(@current_star.y),
+      player.fuel()/LY_SCALE
 
   blit: ->
     c = gbox.getBufferContext()
+    return if not c
     @render(c)
 
   group: 'starmap'

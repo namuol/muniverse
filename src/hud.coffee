@@ -1,5 +1,5 @@
 HUD_X = 10
-HUD_Y = 20
+HUD_Y = 10
 HUD_BAR_W = 4
 HUD_BAR_H = 50
 HUD_SHIELD_X = 0

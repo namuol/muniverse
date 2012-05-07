@@ -16,7 +16,7 @@ split_to_lines = (str, max_width) ->
 
 testDialog = ->
   dialog = new Dialog 'This is a very long string with lots off words that should probably wrap around the screen if we were to attempt to display it with our dialog class.'
-  dialog.items.push new DialogChoice '[OKAY]'
+  dialog.pushItem new DialogChoice '[OKAY]'
   setDialog(dialog)
 
 setDialog = (d) ->
@@ -59,15 +59,15 @@ class Message
     return if not @visible
     c = gbox.getBufferContext()
     return if not c
-    c.fillStyle = 'rgba(0,0,0, 0.75)'
-    c.fillRect 0,0, W,18
+    c.fillStyle = 'rgba(0,0,0, 0.5)'
+    c.fillRect 0,H-34, W,18
     if @msgs[0].person
-      @msgs[0].person.render_face(1,1,1, true)
+      @msgs[0].person.render_face(1,H-33,1, true)
     gbox.blitText c,
       font: 'small'
       text: @msgs[0].str
-      dx:17
-      dy:5
+      dx:18
+      dy:H-28
       dw:W
       dh:16
       halign: gbox.ALIGN_LEFT
@@ -77,11 +77,17 @@ message = new Message
 
 # NOTE: Menu items need to be extended and have first/blit functions to be used...
 class Menu
+  bg: 'starmap_gui'
   _held: (key) ->
     gbox.keyIsHit(key) or (gbox.keyIsHeldForAtLeast(key,15) and gbox.keyHeldTime(key)%5==0)
-  constructor: ->
+  constructor: () ->
     @selected = 0
     @items = []
+    @bg_was_rendered = false
+
+  pushItem: (item) ->
+    @items.push item
+    item.parent = @
 
   prev: ->
     return if @items.length is 0
@@ -103,17 +109,21 @@ class Menu
   b: ->
     if @items[@selected]
       @items[@selected].b()
-  c: ->
-    if @items[@selected]
-      @items[@selected].c()
+  render_bg: (c) ->
+    if @bg and not @bg_was_rendered
+      @bg_was_rendered = true
+      gbox.blitAll c, gbox.getImage(@bg),
+        dx:0
+        dy:0
+
+  render: (x,y, a) ->
 
   update: ->
+    @bg_was_rendered = false
     if @_held 'a'
       @a()
     if @_held 'b'
       @b()
-    if @_held 'c'
-      @c()
 
 class VMenu extends Menu
   update: ->
@@ -124,6 +134,11 @@ class VMenu extends Menu
       @next()
 
   render: (x,yoff) ->
+    c = gbox.getBufferContext()
+    return if not c
+    @render_bg(c)
+    return if @items.length is 0
+
     height = 0
     for item in @items
       height += item.h + 1
@@ -152,6 +167,10 @@ class HMenu extends Menu
       @next()
 
   render: (xoff,y) ->
+    c = gbox.getBufferContext()
+    return if not c
+    @render_bg(c)
+
     width = 0
     for item in @items
       width += 8 * item.text().length + 8
@@ -170,13 +189,69 @@ class HMenu extends Menu
       item.render left, y, alpha
       left += 8*item.text().length + 8
 
+class MultiMenu extends HMenu
+  constructor: () ->
+    super()
+    @skip = false
+    @sub_screen = 0
+    @sub_menus = []
+    i=0
+
+  pushSubMenu: (menu) ->
+    menu.parent = @
+    @sub_menus.push menu
+
+  update: ->
+    return if @sub_menus.length is 0
+
+    @current_sub_menu = @sub_menus[@selected]
+    @current_sub_menu.update()
+    super()
+
+  render: (x,y, a) ->
+    c = gbox.getBufferContext()
+    return if not c
+    @render_bg(c)
+    return if not @current_sub_menu
+    @current_sub_menu.render(x,y, a)
+    super(x,y, a)
+
+menustack = undefined
+class MenuStack extends Menu
+  group: 'menustack'
+  constructor: ->
+    super()
+    @stack = []
+
+  pushMenu: (menu) ->
+    @stack.push menu
+
+  update: ->
+    super()
+
+    if @stack.length > 0
+      @stack[@stack.length-1].update()
+
+    if gbox.keyIsHit('c') and @stack.length > 0
+      @stack.pop()
+
+  first: ->
+    @update()
+
+  render: (x,y, a) ->
+    return if @stack.length is 0
+
+    @stack[@stack.length-1].render(x,y, a)
+  
+  blit: ->
+    @render(0,4,1)
+
 class MenuItem
   constructor: (@name) ->
     @h = 16
   text: -> @name
   a: -> #sounds.select.play()
   b: -> #sounds.cancel.play()
-  c: ->
   render: (x, top, alpha) ->
     gbox.blitText gbox.getBufferContext(),
       font: 'small'
@@ -196,16 +271,20 @@ class Dialog extends HMenu
   first: ->
     @update()
 
-  pre_blit: (c) ->
+  blit: ->
+    @render()
+
+  pre_render: (c) ->
     # Override me
     c.fillStyle = 'rgba(0,0,0, 0.85)'
     c.fillRect 0,0, W,H
 
-  blit: () ->
+  render: () ->
     c = gbox.getBufferContext()
     return if not c
+    @render_bg(c)
 
-    @pre_blit(c)
+    @pre_render(c)
 
     n=0 # Row number
     lines = split_to_lines @msg, DIALOG_MAX_WIDTH
@@ -222,11 +301,11 @@ class Dialog extends HMenu
         halign: gbox.ALIGN_LEFT
         valign: gbox.ALIGN_TOP
       ++n
-    @render(0,4)
+    super(0,H-12)
 
-    @post_blit(c)
+    @post_render(c)
 
-  post_blit: (c) ->
+  post_render: (c) ->
     # Override me
 
 class DialogChoice extends MenuItem
@@ -236,5 +315,4 @@ class DialogChoice extends MenuItem
   b: ->
   c: ->
     closeDialog()
-
 

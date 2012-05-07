@@ -71,8 +71,6 @@ class Planet
     @_x = 0#gbox.getScreenW()/2 - @w/2
     @_y = 0#gbox.getScreenH()/2 - @h/2
 
-    @star = star
-    @num = num
     @orbit = @star.pcount / @num
     if moon
       @ptype = 'moon'

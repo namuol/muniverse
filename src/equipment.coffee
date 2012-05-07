@@ -52,7 +52,7 @@ EQUIPMENT = [
     ]
   ,
     name: 'Shields'
-    attr: 'afterburn'
+    attr: 'shields_max'
     levels: [
         price: -> 2000,
         val: 3

@@ -217,7 +217,7 @@ main = ->
     'game'
     'starmap'
     'planetmap'
-    'stationscreen'
+    'menustack'
     'planet'
     'stations'
     'resources'

@@ -1,4 +1,3 @@
-stationscreen = {}
 stationMode = (station) ->
 
   stopGroups = [
@@ -19,11 +18,13 @@ stationMode = (station) ->
   for g in stopGroups
     gbox.stopGroup g
 
-  stationscreen = new StationScreen station
-  gbox.addObject stationscreen
+  menustack = new MenuStack
+  menustack.pushMenu new StationScreen station, menustack
+
+  gbox.addObject menustack
 
   groups = [
-    'stationscreen'
+    'menustack'
   ]
   for g in groups
     gbox.stopGroup g
@@ -45,6 +46,8 @@ STATIONS = {
 DOCKING_DURATION = 80
 class Station
   new_missions: ->
+    menustack = new MenuStack
+
     max_count = PLANET_CLASSES[@planet.ptype].max_mission_count
     activity = (@planet.star.itg+@planet.star.pirate)
     mission_count = Math.round(Math.min(max_count,frand(0,1)*activity*max_count))
@@ -142,39 +145,33 @@ drawFunds = ->
 
 STATION_SUB_SCREENS = [
     name:'Cargo'
-    bg:'starmap_gui'
     extra_blit: drawFunds
   ,
     name:'Missions'
-    bg:'starmap_gui'
   ,
     name:'Hangar'
-    bg:'starmap_gui'
     extra_blit: drawFunds
 ]
 
 ITG_INSPECT_PROB = 0.5
-class StationScreen extends HMenu
-  group: 'stationscreen'
-  constructor: (station) ->
+class StationScreen extends MultiMenu
+  constructor: (@station) ->
     super()
-    @station = station
     @skip = false
-    @sub_screen = 0
-    @sub_menus = []
     i=0
     for scr in STATION_SUB_SCREENS
-      @items.push new MenuItem scr.name
-      @sub_menus.push new VMenu
+      @pushItem new MenuItem scr.name
+      @pushSubMenu new VMenu
       switch scr.name
         when 'Cargo'
           for own name,r of RESOURCES
-            @sub_menus[i].items.push new ResourceExchanger name, @station
+            @sub_menus[i].pushItem new ResourceExchanger name, @station
         when 'Missions'
-          @sub_menus[i].items = @station.missions
+          for mission in @station.missions
+            @sub_menus[i].pushItem mission
         when 'Hangar'
           for eq in EQUIPMENT
-            @sub_menus[i].items.push new Equipment eq
+            @sub_menus[i].pushItem new Equipment eq
       ++i
     @current_sub_menu = @sub_menus[@selected]
     tmp = player.missions.slice(0)
@@ -189,36 +186,31 @@ class StationScreen extends HMenu
         ncount = player.cargo.narcotics.length
         player.cargo.narcotics = []
         d = new Dialog "ITG probe-drones have detected #{ncount} units of illegal narcotics aboard your vessel during a random search. \"In accordance with ITG regulation L5424:IXV:a, the offending materials have been 'CONFISCATED' and will be 'DESTROYED' immediately\"."
-        d.items.push new DialogChoice '[Press Z to Continue]'
+        d.pushItem new DialogChoice '[Press Z to Continue]'
         setDialog(d)
 
-  c: ->
-    gbox.trashObject @
-    player.y = @station.y - (player.h+2)
-    player.x = @station.x + @station.w/2
-    player.vy = -0.199999999
-    player.setAng(1.5*Math.PI)
-    flightMode()
-
-  first: ->
+  update: ->
     if @skip
       @skip = false
       return
-    @update()
-    
-    @current_sub_menu = @sub_menus[@selected]
-    @current_sub_menu.update()
+    super()
 
-  blit: ->
+    if gbox.keyIsHit 'c'
+      player.y = @station.y - (player.h+2)
+      player.x = @station.x + @station.w/2
+      player.vy = -0.199999999
+      player.setAng(1.5*Math.PI)
+      flightMode()
+
+  render: ->
     c = gbox.getBufferContext()
     return if not c
-    gbox.blitAll c, gbox.getImage(STATION_SUB_SCREENS[@sub_screen].bg),
-      dx:0
-      dy:0
+    @render_bg(c)
+
+    super(0,4, 1)
 
     extra = STATION_SUB_SCREENS[@selected].extra_blit
     if extra
       extra c
     
-    @current_sub_menu.render(0,0)
-    @render(0,4)
+

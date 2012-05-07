@@ -39,7 +39,8 @@ class Mission extends MenuItem
     message.set choose(ACCEPT_MESSAGES),240,@person
   onabandon: ->
     message.set choose(ABANDON_MESSAGES),240,@person
-  a: ->
+
+  accept_or_abandon: ->
     dq = @doesnt_qualify()
     if dq
       message.set dq, 240, @person
@@ -79,7 +80,7 @@ class CabinDweller extends Mission
     super()
     idx = player.cabins.indexOf @person
     player.cabins.splice(idx,1)
-  a: ->
+  accept_or_abandon: ->
     if super()
       if @accepted
         player.cabins.push(@person)
@@ -93,6 +94,23 @@ class CabinDweller extends Mission
       choose NO_CABINS_MESSAGES
     else
       false
+
+class BriefingDialog extends Dialog
+  pre_render: ->
+
+class MissionStarmap extends Dialog
+  constructor: (@mission) ->
+    super('')
+
+  pre_render: (c) ->
+    starmap.render_itg_regions c
+    starmap.render_pirate_regions c
+    starmap.render_fuel_range c
+    starmap.render_map c
+    starmap.render_current_star c
+    starmap.render_current_missions c
+    starmap.render_selected_star c, @mission.location.star
+    starmap.render_star_info c, @mission.location.star
 
 FUGITIVE_TAXI_BONUS = 1.25
 class TaxiMission extends CabinDweller
@@ -110,11 +128,33 @@ class TaxiMission extends CabinDweller
       station = (choose starmap.known_itg_stations)
     
     @star = station.star
-    @price *= starmap.current_star.distance_to @star
+    @star.dist = starmap.current_star.distance_to @star
+    @price *= @star.dist
     @price = Math.round(@price*100)/100
     @location =
       star: @star
       pnum: station.planet
+  a: ->
+    menu = new MultiMenu
+    menu.pushItem new MenuItem 'Starmap'
+    map = new MissionStarmap @
+    #brief.pushItem new DialogChoice '[Press C to Return to Station Screen]'
+    menu.sub_menus.push map
+
+    menu.pushItem new MenuItem 'Brief'
+    brief = new BriefingDialog 'This is placeholder text for brief'
+    #brief.pushItem new DialogChoice '[Press C to Return to Station Screen]'
+    menu.sub_menus.push brief
+
+    menu.a = =>
+      if !@accepted
+        @accept_or_abandon()
+    menu.b = =>
+      if @accepted
+        @accept_or_abandon()
+
+    menustack.pushMenu menu
+
   text: ->
     super() + 'Taxi-' + @loc_name + '-$'+@price
 
