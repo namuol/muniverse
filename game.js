@@ -1041,12 +1041,12 @@ EQUIPMENT = {
         price: function() {
           return 2000;
         },
-        val: 0.005
+        val: 0.008
       }, {
         price: function() {
           return 15000;
         },
-        val: 0.01
+        val: 0.015
       }, {
         price: function() {
           return 60000;
@@ -2604,7 +2604,7 @@ Player = (function() {
       this.vx += this.ax;
       this.vy += this.ay;
     } else {
-      if (gbox.keyIsPressed('down') || gbox.keyIsPressed('b')) {
+      if (!(gbox.keyIsPressed('down') || gbox.keyIsPressed('b'))) {
         this.vx *= 1 - this.afterburn;
         this.vy *= 1 - this.afterburn;
       }
