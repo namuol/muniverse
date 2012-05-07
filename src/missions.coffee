@@ -90,6 +90,12 @@ class CabinDweller extends Mission
     super()
     idx = player.cabins.indexOf @person
     player.cabins.splice(idx,1)
+
+  failure: ->
+    super()
+    idx = player.cabins.indexOf @person
+    player.cabins.splice(idx,1)
+
   accept_or_abandon: ->
     if super()
       if @accepted

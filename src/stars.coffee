@@ -217,7 +217,7 @@ class Starmap
         if @current_star != @closest_star
           player.burn_fuel(@closest_star.dist)
           date += @closest_star.dist * player.ftl_ms_per_ly
-          current_planet = null
+          current_planet = undefined
           @current_star = @closest_star
           @closest_star.dist = 0
         return
@@ -226,7 +226,7 @@ class Starmap
 
     if gbox.keyIsHit 'c'
       sounds.cancel.play()
-      flightMode()
+      flightMode(current_planet is undefined)
 
     if !@closest_star or @cursor.x != x or @cursor.y != y
       previous = @closest_star

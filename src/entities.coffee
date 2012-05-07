@@ -31,7 +31,7 @@ class Person
 
 class Baddie
   group: 'baddies'
-  constructor: (planet) ->
+  constructor: () ->
     @num = 0
     @frame = 0
     @image = gbox.getImage('bad'+@num)
@@ -53,7 +53,7 @@ class Baddie
     @tsy = 0
     @attack_dist = 90
     @orbit_radius = 60
-    @hostile = Math.random() < (0.25+current_planet.star.pirate-current_planet.star.itg)
+    @hostile = Math.random() < (0.25+starmap.current_star.pirate-starmap.current_star.itg)
     @ang = 0
     @thrust = 0.006
     @afterburn = 0.005
@@ -145,6 +145,6 @@ class Baddie
       dy: Math.round(@y-cam.y)
 
 
-addBaddie = (planet) ->
-  gbox.addObject new Baddie planet
+addBaddie = ->
+  gbox.addObject new Baddie
 
