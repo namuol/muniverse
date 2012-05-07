@@ -281,9 +281,8 @@ class Starmap
         r.radius
 
   render_star_info: (c, star) ->
-    if not star.dist
-      star.dist = @current_star.distance_to star
-    travel_time = player.ftl_ms_per_ly * star.dist
+    dist = @current_star.distance_to star
+    travel_time = player.ftl_ms_per_ly * dist
     gbox.blitText c,
       font: 'small'
       text:"ETA #{formatDateShort date + travel_time}(#{Math.round((travel_time/DAYS)*10)/10} days)"

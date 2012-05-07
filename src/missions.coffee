@@ -128,7 +128,6 @@ class TaxiMission extends CabinDweller
   constructor: (@person) ->
     super @person
 
-    @price = RESOURCES.fuel.mean_price * 4
     if @person.fugitive
       @price *= FUGITIVE_TAXI_BONUS
       @loc_name = 'Pirate st.'
@@ -139,7 +138,14 @@ class TaxiMission extends CabinDweller
     
     @star = station.star
     @star.dist = starmap.current_star.distance_to @star
+    @lvl = choose [0,0,0,1,1,2]
+    ms_per_ly = EQUIPMENT.ftl_ms_per_ly.levels[@lvl].val
+    hurry = Math.random()
+    @deadline = date + @star.dist * ms_per_ly * (2.5 - hurry)
+    @price = RESOURCES.fuel.mean_price * 4
     @price *= @star.dist
+    @price += @price * hurry * 0.5
+    @price *= (@lvl+1)
     @price = Math.round(@price*100)/100
     @location =
       star: @star
@@ -166,7 +172,7 @@ class TaxiMission extends CabinDweller
     menustack.pushMenu menu
 
   text: ->
-    super() + 'Taxi-' + @loc_name + '-$'+@price
+    super() + 'Taxi lvl'+@lvl+' by '+formatDateShort(@deadline)+' $' + @price
 
   tick: ->
     #if date > @deadline
@@ -174,7 +180,10 @@ class TaxiMission extends CabinDweller
     return if not current_station
     if current_station.planet.num is @location.pnum and
        current_station.planet.star is @location.star
-      @success()
+      if date > @deadline
+        @failure()
+      else
+        @success()
 
 class CrewMission extends CabinDweller
   type:'crew'
