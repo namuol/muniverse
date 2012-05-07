@@ -10,6 +10,7 @@ RESOURCES =
       price_stdv: 2
       min_dist: 0.5
       max_dist: 3
+      min_count: 10
     'lifeforms':
       num:1
       natural:true
@@ -21,6 +22,7 @@ RESOURCES =
       price_stdv: 4
       min_dist: 0
       max_dist: 1
+      min_count: 0
     'fuel':
       num:2
       natural:true
@@ -32,6 +34,7 @@ RESOURCES =
       price_stdv: 0.5
       min_dist: 0
       max_dist: 1.25
+      min_count: 20
     'minerals':
       num:3
       natural:true
@@ -43,6 +46,7 @@ RESOURCES =
       price_stdv: 1
       min_dist: 0
       max_dist: 1
+      min_count: 0
     'narcotics':
       num:4
       natural:false
@@ -56,6 +60,7 @@ RESOURCES =
       pirate_mod_max: 0.9
       min_dist: 4
       max_dist: 5
+      min_count: 0
 
 class CargoItem
   constructor: (@origin) ->

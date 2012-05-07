@@ -77,6 +77,7 @@ class Station
       else
         resource_wealth = frand 0,1
         count = 50*frand(0,(@planet.star.itg+@planet.star.pirate))
+      count += res.min_count
       c=0
       while c < count
         @cargo[name].push new CargoItem @planet.pid
