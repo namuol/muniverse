@@ -1,19 +1,26 @@
-EQUIPMENT = [
+EQUIPMENT =
+  repair:
+    name: 'Repair Shields'
+    price: -> (player.shields_max - player.shields) * 100
+    apply: ->
+      player.shields = player.shields_max
+  thrust:
     name: 'Thruster'
-    attr: 'thrust'
     levels: [
         price: -> 1500,
         val: 0.045*0.33
+        desc: 'Standard introductory thruster.'
       ,
         price: -> 10000,
         val: 0.045*0.66
+        desc: '2X the thrust as introductory thruster.'
       ,
         price: -> 40000
         val: 0.045
+        desc: '3X the thrust as introductory thruster.'
     ]
-  ,
+  wpower:
     name: 'Plasma Cannon'
-    attr: 'wpower'
     levels: [
         price: -> 1000,
         val: 0.5
@@ -24,9 +31,8 @@ EQUIPMENT = [
         price: -> 20000
         val: 2
     ]
-  ,
+  wcharge_rate:
     name: 'Weapon Charger'
-    attr: 'wcharge_rate'
     levels: [
         price: -> 10000,
         val: 0.025
@@ -37,9 +43,8 @@ EQUIPMENT = [
         price: -> 60000
         val: 0.3
     ]
-  ,
+  afterburn:
     name: 'Afterburner'
-    attr: 'afterburn'
     levels: [
         price: -> 2000,
         val: 0.005
@@ -50,9 +55,8 @@ EQUIPMENT = [
         price: -> 60000
         val: 0.03
     ]
-  ,
+  shields_max:
     name: 'Shields'
-    attr: 'shields_max'
     levels: [
         price: -> 2000,
         val: 3
@@ -63,13 +67,18 @@ EQUIPMENT = [
         price: -> 90000
         val: 25
     ]
-  ,
-    name: 'Repair Shields'
-    price: -> (player.shields_max - player.shields) * 100
-    apply: ->
-      player.shields = player.shields_max
-
-]
+  ftl_ms_per_ly:
+    name: 'FTL Drive'
+    levels: [
+        price: -> 4000,
+        val: 2 * DAYS
+      ,
+        price: -> 10000,
+        val: 1 * DAYS
+      ,
+        price: -> 50000
+        val: 0.5 * DAYS
+    ]
 
 class Equipment extends MenuItem
   constructor: (@eq) ->
@@ -91,6 +100,13 @@ class Equipment extends MenuItem
     player.funds -= @eq.levels[lvl+1].price()
     player[@eq.attr] = @eq.levels[lvl+1].val
     ++player.equipment[@eq.name]
+
+  b: ->
+    lvl = player.equipment[@eq.name]
+    return if not @eq.levels or lvl is undefined
+    ++lvl
+    if @eq.levels[lvl].desc
+      setDialog new Dialog @eq.levels[lvl].desc
 
   text: ->
     if @eq.price

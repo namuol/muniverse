@@ -61,7 +61,6 @@ PLANET_CLASSES =
     max_mission_count: 7
     ring_prob: 0
 
-current_planet = undefined
 MIN_ITG_STATION_PROB = 0.1
 MIN_PIRATE_STATION_PROB = 0.1
 MIN_STATION_DIST = 100

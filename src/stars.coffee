@@ -208,18 +208,23 @@ class Starmap
     if @closest_star and gbox.keyIsHit 'a'
       if player.fuel() >= @closest_star.dist
         sounds.select.play()
-        player.burn_fuel(@closest_star.dist)
         gbox.clearGroup 'planetmap'
         @closest_star.generate_planets()
         window.planetmap = new Planetmap @closest_star
         window.planetmap.skip = true
         gbox.addObject planetmap
         planetmapMode()
+        if @current_star != @closest_star
+          player.burn_fuel(@closest_star.dist)
+          date += @closest_star.dist * player.ftl_ms_per_ly
+          current_planet = null
+          @current_star = @closest_star
+          @closest_star.dist = 0
         return
       else
         message.set 'Insufficient fuel.', 90
 
-    if current_planet and gbox.keyIsHit 'c'
+    if gbox.keyIsHit 'c'
       sounds.cancel.play()
       flightMode()
 
@@ -278,9 +283,10 @@ class Starmap
   render_star_info: (c, star) ->
     if not star.dist
       star.dist = @current_star.distance_to star
+    travel_time = player.ftl_ms_per_ly * star.dist
     gbox.blitText c,
       font: 'small'
-      text:"LY: #{Math.round(star.dist*100)/100}"
+      text:"ETA #{formatDateShort date + travel_time}(#{Math.round((travel_time/DAYS)*10)/10} days)"
       dx:1
       dy:H-12
       dw:64

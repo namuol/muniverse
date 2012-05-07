@@ -253,7 +253,8 @@ main = ->
     gbox.keyIsHit 'a'
 
   maingame.initializeGame = ->
-    date = rand 3500000,4000000
+    date = startDate()
+    console.log formatDate date
     player = new Player
     starmap = new Starmap 5,34,0.6
     starmap.current_star = starmap.known_itg_stations[0].star
@@ -265,6 +266,7 @@ main = ->
     window.planetmap = new Planetmap starmap.current_star
     gbox.addObject message
     gbox.addObject starmap
+    gbox.addObject new MissionTicker
     cam = addCamera()
 
     gbox.addObject

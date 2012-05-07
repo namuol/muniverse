@@ -15,15 +15,17 @@ ck = require 'coffeecup'
 BUILD_DIR = 'build/'
 
 appFiles  = [
+  'global' # Must be first.
   'util'
+  'time'
   'ui'
   'sounds'
   'entities'
   'equipment'
   'fx'
   'missions'
-  'stars'
   'planets'
+  'stars'
   'player'
   'radar'
   'hud'

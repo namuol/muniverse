@@ -68,6 +68,16 @@ class Mission extends MenuItem
     @person.render(x,top,alpha)
     super(x+24, top+4, alpha)
 
+  tick: ->
+    # Override me!
+
+class MissionTicker
+  group: 'game'
+  first: ->
+    tmp = player.missions.slice(0)
+    for mission in tmp
+      mission.tick()
+
 NO_CABINS_MESSAGES = [
   'That\'s a bit too cozy for my taste.'
   'It looks like you\'re full.'
@@ -118,7 +128,7 @@ class TaxiMission extends CabinDweller
   constructor: (@person) ->
     super @person
 
-    @price = RESOURCES.fuel.mean_price * 1.25
+    @price = RESOURCES.fuel.mean_price * 4
     if @person.fugitive
       @price *= FUGITIVE_TAXI_BONUS
       @loc_name = 'Pirate st.'
@@ -157,6 +167,14 @@ class TaxiMission extends CabinDweller
 
   text: ->
     super() + 'Taxi-' + @loc_name + '-$'+@price
+
+  tick: ->
+    #if date > @deadline
+    #  @failure()
+    return if not current_station
+    if current_station.planet.num is @location.pnum and
+       current_station.planet.star is @location.star
+      @success()
 
 class CrewMission extends CabinDweller
   type:'crew'

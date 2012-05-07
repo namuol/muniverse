@@ -1,4 +1,5 @@
 stationMode = (station) ->
+  current_station = station
 
   stopGroups = [
     'background'
@@ -170,16 +171,11 @@ class StationScreen extends MultiMenu
           for mission in @station.missions
             @sub_menus[i].pushItem mission
         when 'Hangar'
-          for eq in EQUIPMENT
+          for own attr,eq of EQUIPMENT
+            eq.attr = attr
             @sub_menus[i].pushItem new Equipment eq
       ++i
     @current_sub_menu = @sub_menus[@selected]
-    tmp = player.missions.slice(0)
-    for m in tmp
-      switch m.type
-        when 'taxi'
-          if @station.planet.num is m.location.pnum and @station.planet.star is m.location.star
-            m.success()
 
     if @station.name is 'itg' and (ITG_INSPECT_PROB*player.itg_inspect_mod>frand(0,1))
       if player.cargo.narcotics and player.cargo.narcotics.length > 0

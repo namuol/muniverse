@@ -57,6 +57,7 @@ class Message
 
   blit: ->
     return if not @visible
+
     c = gbox.getBufferContext()
     return if not c
     c.fillStyle = 'rgba(0,0,0, 0.5)'
@@ -270,6 +271,8 @@ class Dialog extends HMenu
     super()
   first: ->
     @update()
+    if gbox.keyIsHit 'c'
+      closeDialog()
 
   blit: ->
     @render()

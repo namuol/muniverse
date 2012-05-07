@@ -17,13 +17,15 @@ flightMode = (reset) ->
   gbox.addObject new Radar
   gbox.addObject new Hud
   gbox.addObject player
-  gbox.addObject current_planet
-  if current_planet.itg_station
-    gbox.addObject current_planet.itg_station
-  if current_planet.pirate_station
-    gbox.addObject current_planet.pirate_station
+  
+  if current_planet
+    gbox.addObject current_planet
+    if current_planet.itg_station
+      gbox.addObject current_planet.itg_station
+    if current_planet.pirate_station
+      gbox.addObject current_planet.pirate_station
 
-  current_planet.addResources()
+    current_planet.addResources()
 
   stopGroups = [
     'starmap'
@@ -55,22 +57,24 @@ flightMode = (reset) ->
     cam.y = current_planet._y-cam.h/2
     cam.reset = true
 
+  current_station = undefined
+
 GAME_OVER_MSGS = [
   'GAME IS OVER'
   'DERP! You died.'
   'Losing is fun.'
 ]
 
-BASE_THRUST = EQUIPMENT[0].levels[0].val
+BASE_THRUST = EQUIPMENT.thrust.levels[0].val
 BASE_SHIELDS = 3
-BASE_WCHARGE_RATE = EQUIPMENT[2].levels[0].val
+BASE_WCHARGE_RATE = EQUIPMENT.wcharge_rate.levels[0].val
 BASE_WCHARGE_CAP = 2
 BASE_WSPEED = 2
-BASE_WPOWER = EQUIPMENT[1].levels[0].val
+BASE_WPOWER = EQUIPMENT.wpower.levels[0].val
 BASE_WSPAN = 80
 TURN_SPEED = 0.1
 BASE_CARGO_CAP = 5
-BASE_AFTERBURN = EQUIPMENT[3].levels[0].val
+BASE_AFTERBURN = EQUIPMENT.afterburn.levels[0].val
 player = undefined
 date = 0
 class Player
@@ -91,6 +95,7 @@ class Player
     @shields_max = BASE_SHIELDS
     @shields = @shields_max
     @itg_inspect_mod = 1
+    @ftl_ms_per_ly = EQUIPMENT.ftl_ms_per_ly.levels[0].val
 
     @cargo =
       fuel: [
@@ -100,7 +105,7 @@ class Player
        'teehee',2
       ]
     @equipment = {}
-    for eq in EQUIPMENT
+    for own attr,eq of EQUIPMENT
       if not eq.no_default
         @equipment[eq.name] = 0
 
