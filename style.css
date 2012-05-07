@@ -15,13 +15,26 @@ canvas {
   -ms-interpolation-mode: nearest-neighbor;
 }
 body.instructions-visible canvas {
-  padding: 20px;
+  margin: 20px;
   position: absolute;
   top: 0;
   left: 0;
 }
 #instructions {
   display: none;
+}
+a {
+  color: #daa;
+  text-decoration: none;
+}
+a:hover {
+  color: #fbb;
+}
+#links {
+  color: #aaa;
+  position: absolute;
+  top: 680px;
+  left: 22px;
 }
 h4,
 h5 {
