@@ -1501,10 +1501,9 @@ TaxiMission = (function(_super) {
   TaxiMission.prototype.type = 'taxi';
 
   function TaxiMission(person) {
-    var station;
+    var hurry, ms_per_ly, station;
     this.person = person;
     TaxiMission.__super__.constructor.call(this, this.person);
-    this.price = RESOURCES.fuel.mean_price * 4;
     if (this.person.fugitive) {
       this.price *= FUGITIVE_TAXI_BONUS;
       this.loc_name = 'Pirate st.';
@@ -1515,7 +1514,14 @@ TaxiMission = (function(_super) {
     }
     this.star = station.star;
     this.star.dist = starmap.current_star.distance_to(this.star);
+    this.lvl = choose([0, 0, 0, 1, 1, 2]);
+    ms_per_ly = EQUIPMENT.ftl_ms_per_ly.levels[this.lvl].val;
+    hurry = Math.random();
+    this.deadline = date + this.star.dist * ms_per_ly * (2.5 - hurry);
+    this.price = RESOURCES.fuel.mean_price * 4;
     this.price *= this.star.dist;
+    this.price += this.price * hurry * 0.5;
+    this.price *= this.lvl + 1;
     this.price = Math.round(this.price * 100) / 100;
     this.location = {
       star: this.star,
@@ -1547,7 +1553,7 @@ TaxiMission = (function(_super) {
   };
 
   TaxiMission.prototype.text = function() {
-    return TaxiMission.__super__.text.call(this) + 'Taxi-' + this.loc_name + '-$' + this.price;
+    return TaxiMission.__super__.text.call(this) + 'Taxi lvl' + this.lvl + ' by ' + formatDateShort(this.deadline) + ' $' + this.price;
   };
 
   TaxiMission.prototype.tick = function() {
@@ -1555,7 +1561,11 @@ TaxiMission = (function(_super) {
       return;
     }
     if (current_station.planet.num === this.location.pnum && current_station.planet.star === this.location.star) {
-      return this.success();
+      if (date > this.deadline) {
+        return this.failure();
+      } else {
+        return this.success();
+      }
     }
   };
 
@@ -2340,10 +2350,8 @@ Starmap = (function() {
 
   Starmap.prototype.render_star_info = function(c, star) {
     var travel_time;
-    if (!star.dist) {
-      star.dist = this.current_star.distance_to(star);
-    }
-    travel_time = player.ftl_ms_per_ly * star.dist;
+    dist = this.current_star.distance_to(star);
+    travel_time = player.ftl_ms_per_ly * dist;
     return gbox.blitText(c, {
       font: 'small',
       text: "ETA " + (formatDateShort(date + travel_time)) + "(" + (Math.round((travel_time / DAYS) * 10) / 10) + " days)",
