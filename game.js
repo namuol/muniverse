@@ -224,33 +224,38 @@ Message = (function() {
     this.msgs = [];
   }
 
-  Message.prototype.add = function(str, lifespan, person) {
+  Message.prototype.add = function(str, lifespan, person, effect, effect_params) {
     if (lifespan == null) {
       lifespan = 240;
     }
     this.msgs.push({
       str: str,
       lifespan: lifespan,
-      person: person
+      person: person,
+      effect: effect,
+      effect_params: effect_params
     });
     return this.visible = true;
   };
 
-  Message.prototype.set = function(str, lifespan, person) {
+  Message.prototype.set = function(str, lifespan, person, effect, effect_params) {
     if (lifespan == null) {
       lifespan = 240;
     }
+    this.tick = 0;
     this.msgs = [];
-    return this.add(str, lifespan, person);
+    return this.add(str, lifespan, person, effect, effect_params);
   };
 
   Message.prototype.first = function() {
     if (!this.visible) {
       return;
     }
+    ++this.tick;
     if (this.msgs[0].lifespan !== void 0) {
       if (--this.msgs[0].lifespan < 0) {
         this.msgs.splice(0, 1);
+        this.tick = 0;
         if (this.msgs.length === 0) {
           return this.visible = false;
         }
@@ -258,10 +263,86 @@ Message = (function() {
     }
   };
 
+  Message.prototype._fx_y_sin = function(params) {
+    var fx, yoff;
+    if (!params) {
+      params = {
+        dist: 4,
+        speed: 0.1
+      };
+    }
+    yoff = params.dist * Math.sin(this.tick * params.speed);
+    fx = {
+      tx: 18,
+      ty: H - 28 + yoff,
+      ta: 1,
+      px: 1,
+      py: H - 33 + yoff,
+      pa: 1
+    };
+    return fx;
+  };
+
+  Message.prototype._fx_pop_up = function() {
+    var fx;
+    if (this.tick === 1) {
+      this.tvy = -5;
+      this.ty = H;
+      this.pvy = -5;
+      this.py = H;
+      this.tabove = false;
+      this.pabove = false;
+    }
+    this.tvy += 0.3;
+    this.ty += this.tvy;
+    if (this.ty < H - 28) {
+      this.tabove = true;
+    }
+    if (this.tabove) {
+      if (this.ty >= H - 28) {
+        this.tvy *= -0.8;
+        this.ty = H - 28;
+      }
+    }
+    if (this.tick >= 10) {
+      this.pvy += 0.3;
+      this.py += this.pvy;
+      if (this.py < H - 33) {
+        this.pabove = true;
+      }
+      if (this.pabove) {
+        if (this.py >= H - 33) {
+          this.pvy *= -0.8;
+          this.py = H - 33;
+        }
+      }
+    }
+    fx = {
+      tx: 18,
+      ty: this.ty,
+      ta: 1,
+      px: 1,
+      py: this.py,
+      pa: 1
+    };
+    return fx;
+  };
+
   Message.prototype.blit = function() {
-    var c;
+    var c, fx;
     if (!this.visible) {
       return;
+    }
+    fx = {
+      tx: 18,
+      ty: H - 28,
+      ta: 1,
+      px: 1,
+      py: H - 33,
+      pa: 1
+    };
+    if (this.msgs[0].effect) {
+      fx = this['_fx_' + this.msgs[0].effect](this.msgs[0].effect_params);
     }
     c = gbox.getBufferContext();
     if (!c) {
@@ -270,17 +351,18 @@ Message = (function() {
     c.fillStyle = 'rgba(0,0,0, 0.5)';
     c.fillRect(0, H - 34, W, 18);
     if (this.msgs[0].person) {
-      this.msgs[0].person.render_face(1, H - 33, 1, true);
+      this.msgs[0].person.render_face(fx.px, fx.py, fx.pa, true);
     }
     return gbox.blitText(c, {
       font: 'small',
       text: this.msgs[0].str,
-      dx: 18,
-      dy: H - 28,
+      dx: Math.round(fx.tx),
+      dy: Math.round(fx.ty),
       dw: W,
       dh: 16,
       halign: gbox.ALIGN_LEFT,
-      valign: gbox.ALIGN_TOP
+      valign: gbox.ALIGN_TOP,
+      alpha: fx.ta
     });
   };
 
@@ -1331,7 +1413,7 @@ Mission = (function(_super) {
     var idx;
     idx = player.missions.indexOf(this);
     player.missions.splice(idx, 1);
-    message.set(choose(SUCCESS_MESSAGES), 240, this.person);
+    message.set(choose(SUCCESS_MESSAGES), 240, this.person, 'pop_up');
     if (this.price) {
       return player.funds += this.price;
     }
@@ -1341,15 +1423,15 @@ Mission = (function(_super) {
     var idx;
     idx = player.missions.indexOf(this);
     player.missions.splice(idx, 1);
-    return message.set(choose(FAILURE_MESSAGES), 240, this.person);
+    return message.set(choose(FAILURE_MESSAGES), 240, this.person, 'pop_up');
   };
 
   Mission.prototype.onaccept = function() {
-    return message.set(choose(ACCEPT_MESSAGES), 240, this.person);
+    return message.set(choose(ACCEPT_MESSAGES), 240, this.person, 'pop_up');
   };
 
   Mission.prototype.onabandon = function() {
-    return message.set(choose(ABANDON_MESSAGES), 240, this.person);
+    return message.set(choose(ABANDON_MESSAGES), 240, this.person, 'pop_up');
   };
 
   Mission.prototype.accept_or_abandon = function() {
@@ -1929,7 +2011,7 @@ Planetmap = (function() {
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       planet = _ref[_i];
       this.positions.push([]);
-      x = W * 0.1 + (W * 0.8) * ((p + 1) / this.star.planets.length);
+      x = (W * 0.8) * ((p + 1) / this.star.planets.length);
       planet.cursorpos = {
         x: x,
         y: y,
