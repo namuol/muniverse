@@ -73,13 +73,25 @@ class Planet
     @orbit = @star.pcount / @num
     if moon
       @ptype = 'moon'
-      @color = rgba @random.choose planetcolors[2]
+      @c1 = @random.choose planetcolors[2]
+      @c2 = [@random.choose(@c1), @random.choose(@c1), @random.choose(@c1)]
+      @color = rgba @c1
+      @atmosphere_size = 3
+      @atmosphere_density = 0.25
     else if @orbit > GAS_GIANT_MIN_ORBIT and @random() < PLANET_CLASSES.gas_giant.prob
       @ptype = 'gas_giant'
-      @color = rgba @random.choose planetcolors[1]
+      @c1 = @random.choose planetcolors[1]
+      @c2 = [@random.choose(@c1), @random.choose(@c1), @random.choose(@c1)]
+      @color = rgba @c1
+      @atmosphere_size = 25
+      @atmosphere_density = 0.5
     else
       @ptype = 'rocky'
-      @color = rgba @random.choose planetcolors[0]
+      @c1 = @random.choose planetcolors[0]
+      @c2 = [@random.choose(@c1), @random.choose(@c1), @random.choose(@c1)]
+      @color = rgba @c1
+      @atmosphere_size = 3
+      @atmosphere_density = 0.3
 
     cls = PLANET_CLASSES[@ptype]
     @radius = @random.frand cls.min_radius, cls.max_radius
@@ -125,6 +137,11 @@ class Planet
       @pirate_station = new Station @, 'pirate', x,y
       @pirate_station.new_missions()
 
+    # Sunlight direction:
+    @dirx = -@radius*0.25#frand(-@radius,@radius)
+    @diry = 0#frand(-@radius*.1,@radius*.1)
+    @pre_render @dirx, @diry
+
     @moons = []
     return if moon
     mcount = Math.round(@random.rand(cls.min_moons, cls.max_moons)*(@radius/120))
@@ -150,10 +167,6 @@ class Planet
     @yoff = 0
     @dist = 3
 
-    # Sunlight direction:
-    @dirx = frand(-@radius,@radius)
-    @diry = frand(-@radius*.1,@radius*.1)
-
   first: ->
     @ang += 0.02
     @xoff = 0
@@ -161,20 +174,71 @@ class Planet
     @x = Math.round @_x + @xoff
     @y = Math.round @_y + @yoff
 
-  render: (scale, x,y, dirx,diry) ->
-    ctx = gbox.getBufferContext()
-    return if not ctx
-    radius = @radius * scale
-    dirx *= scale
-    diry *= scale
+  _render_pass: (ctx, radius, x, y, dirx, diry, s,w, a) ->
     ctx.beginPath()
-    grd = ctx.createRadialGradient x+dirx,y+diry, 0, x+dirx,y+diry, radius*1.4
-    grd.addColorStop 0, @color
-    grd.addColorStop 1, '#000510'
+    grd = ctx.createRadialGradient x+dirx,y+diry, 0, x+dirx,y+diry, radius*1.3
+    grd.addColorStop 0, "rgba(#{@c1[0]},#{@c1[1]},#{@c1[2]},#{a})"
+    grd.addColorStop s, "rgba(#{@c1[0]},#{@c1[1]},#{@c1[2]},#{(1-s)*a})"
+    rn = lerp @c1[0],@c2[0], s+w
+    gn = lerp @c1[1],@c2[1], s+w
+    bn = lerp @c1[2],@c2[2], s+w
+    grd.addColorStop s+w, rgba [rn,gn,bn, (1-(s+w))*a]
+    grd.addColorStop Math.min(1,s+w+w), rgba [rn,gn,bn, 0]
     ctx.fillStyle = grd
     ctx.arc x,y, radius, 0, 2*Math.PI, false
     ctx.fill()
     ctx.closePath()
+  
+  pre_render: (dirx,diry) ->
+    @el = document.createElement 'canvas'
+    @el.setAttribute 'width', (@radius+@atmosphere_size)*2+1
+    @el.setAttribute 'height', (@radius+@atmosphere_size)*2+1
+
+    @w = @el.width
+    @h = @el.height
+    x = @w/2
+    y = @h/2
+
+    ctx = @el.getContext '2d'
+
+    ctx.clearRect 0,0, @w,@h
+
+    # Ambient light:
+    ctx.beginPath()
+    ctx.fillStyle = @star.bg_color
+    if @ptype is 'gas_giant'
+      ctx.arc x,y, @radius+@atmosphere_size, 0, 2*Math.PI, false
+    else
+      ctx.arc x,y, @radius, 0, 2*Math.PI, false
+
+    ctx.fill()
+    ctx.closePath()
+
+    @_render_pass ctx, @radius, x, y, dirx, diry, 0.75, 0.2, 1
+    i=0
+    while i<(@atmosphere_size+1)
+      @_render_pass ctx, @radius+i*1, x, y, dirx, diry, 0.75, 0.2, @atmosphere_density
+      ++i
+  
+  render_outline: (scale, x,y) ->
+    ctx = gbox.getBufferContext()
+    return if not ctx
+
+    ctx.beginPath()
+    ctx.fillStyle = @star.bg_color
+    if @ptype is 'gas_giant'
+      ctx.arc x,y, (@radius+@atmosphere_size)*scale+1, 0, 2*Math.PI, false
+    else
+      ctx.arc x,y, @radius*scale+1.5, 0, 2*Math.PI, false
+    ctx.fill()
+    ctx.closePath()
+
+  render: (scale, x,y) ->
+    ctx = gbox.getBufferContext()
+    return if not ctx
+    w = @w*scale
+    h = @h*scale
+    ctx.drawImage @el, x-(w/2),y-(h/2), w,h
 
   blit: ->
     x = Math.round @x-cam.x
@@ -286,11 +350,13 @@ class Planetmap
         if p != @cursor.x
           x = @positions[p][0].x
           y = @positions[p][0].y
-          planet.render 0.25, x,y, -planet.radius,0
+          planet.render_outline 0.25, x,y
+          planet.render 0.25, x,y
           m=0
           for moon in planet.moons
             x = @positions[p][m+1].x
             y = @positions[p][m+1].y
+            moon.render_outline 0.25, x,y
             moon.render 0.25,
               x,
               y,
@@ -303,15 +369,14 @@ class Planetmap
       x = @positions[p][0].x
       y = @positions[p][0].y
 
-      planet.render 0.25, x,y, -planet.radius*0.5,0
+      planet.render_outline 0.25, x,y
+      planet.render 0.25, x,y
       m=0
       for moon in planet.moons
         x = @positions[p][m+1].x
         y = @positions[p][m+1].y
-        moon.render 0.25,
-          x,
-          y,
-          -moon.radius*0.5,0
+        moon.render_outline 0.25, x,y
+        moon.render 0.25, x,y
         ++m
 
       for m in player.missions

@@ -40,6 +40,7 @@ class Star
   constructor: (@sector, @num, @x,@y, @color, @itg, @pirate) ->
     @pcount = rand 1,MAX_STAR_PLANETS
     @sid = "S-#{@num}.#{Math.round @x}.#{Math.round @y}"
+    @bg_color = '#000510'
 
   generate_planets: ->
     random = grand(Math.prng(BASE_SEED+'.'+@sector.x+'.'+@sector.y+'.'+@x+'.'+@y))

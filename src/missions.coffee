@@ -178,7 +178,7 @@ class TaxiMission extends CabinDweller
     menustack.pushMenu menu
 
   text: ->
-    super() + 'Taxi lvl'+@lvl+' by '+formatDateShort(@deadline)+' $' + @price
+    super() + 'Taxi lvl'+(@lvl+1)+' by '+formatDateShort(@deadline)+' $' + @price
 
   tick: ->
     #if date > @deadline

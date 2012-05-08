@@ -32,6 +32,21 @@ dist = (a,b) ->
 
 choose = (array) -> array[rand(0,array.length-1)]
 
+lerp = (a, b, x) ->
+  return Math.round( (a*(1-x)+b*(1+x))/2 )
+
+RGBColor = (color) ->
+  rgb = undefined
+  colorObj = undefined
+  color = color.replace("0x", "")
+  color = color.replace("#", "")
+  rgb = parseInt(color, 16)
+  colorObj = {}
+  colorObj.r = (rgb & (255 << 16)) >> 16
+  colorObj.g = (rgb & (255 << 8)) >> 8
+  colorObj.b = (rgb & 255)
+  colorObj
+
 rgba = (c) -> "rgba(#{c[0]},#{c[1]},#{c[2]},#{c[3]})"
 getPixel = (img, x,y) ->
   pos = (x + y * img.width) * 4
