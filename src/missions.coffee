@@ -28,17 +28,17 @@ class Mission extends MenuItem
   success: ->
     idx = player.missions.indexOf @
     player.missions.splice(idx,1)
-    message.set choose(SUCCESS_MESSAGES),240,@person
+    message.set choose(SUCCESS_MESSAGES),240,@person, 'pop_up'
     if @price
       player.funds += @price
   failure: ->
     idx = player.missions.indexOf @
     player.missions.splice(idx,1)
-    message.set choose(FAILURE_MESSAGES),240,@person
+    message.set choose(FAILURE_MESSAGES),240,@person, 'pop_up'
   onaccept: ->
-    message.set choose(ACCEPT_MESSAGES),240,@person
+    message.set choose(ACCEPT_MESSAGES),240,@person, 'pop_up'
   onabandon: ->
-    message.set choose(ABANDON_MESSAGES),240,@person
+    message.set choose(ABANDON_MESSAGES),240,@person, 'pop_up'
 
   accept_or_abandon: ->
     dq = @doesnt_qualify()

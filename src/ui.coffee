@@ -13,7 +13,6 @@ split_to_lines = (str, max_width) ->
   lines.push current_line
   return lines
 
-
 testDialog = ->
   dialog = new Dialog 'This is a very long string with lots off words that should probably wrap around the screen if we were to attempt to display it with our dialog class.'
   dialog.pushItem new DialogChoice '[OKAY]'
@@ -35,44 +34,112 @@ class Message
   constructor: ->
     @visible = false
     @msgs = []
-  add: (str, lifespan=240, person) ->
+  add: (str, lifespan=240, person, effect, effect_params) ->
     @msgs.push
       str: str
       lifespan: lifespan
       person: person
+      effect: effect
+      effect_params: effect_params
     @visible = true
 
-  set: (str, lifespan=240, person) ->
+  set: (str, lifespan=240, person, effect, effect_params) ->
+    @tick = 0
     @msgs = []
-    @add str, lifespan, person
+    @add str, lifespan, person, effect, effect_params
 
   first: ->
     return if not @visible
-
+    ++@tick
     if @msgs[0].lifespan != undefined
       if --@msgs[0].lifespan < 0
         @msgs.splice 0,1
+        @tick = 0
         if @msgs.length is 0
           @visible = false
 
+  _fx_y_sin: (params) ->
+    if not params
+      params =
+        dist: 4
+        speed: 0.1
+    yoff = params.dist*Math.sin @tick*params.speed
+    fx =
+      tx: 18
+      ty: H-28 + yoff
+      ta: 1
+      px: 1
+      py: H-33 + yoff
+      pa: 1
+    return fx
+
+  _fx_pop_up: ->
+    if @tick == 1
+      @tvy = -5
+      @ty = H
+      @pvy = -5
+      @py = H
+      @tabove = false
+      @pabove = false
+
+    @tvy += 0.3
+    @ty += @tvy
+    if @ty < H-28
+      @tabove = true
+
+    if @tabove
+      if @ty >= H-28
+        @tvy *= -0.8
+        @ty = H-28
+
+    if @tick >= 10
+      @pvy += 0.3
+      @py += @pvy
+      if @py < H-33
+        @pabove = true
+      if @pabove
+        if @py >= H-33
+          @pvy *= -0.8
+          @py = H-33
+
+    fx =
+      tx: 18
+      ty: @ty
+      ta: 1
+      px: 1
+      py: @py
+      pa: 1
+    return fx
+
   blit: ->
     return if not @visible
+    fx =
+      tx: 18    # text X
+      ty: H-28  # text Y
+      ta: 1     # text alpha
+      px: 1     # person X
+      py: H-33  # person Y
+      pa: 1     # person alpha
+
+    if @msgs[0].effect
+      fx = @['_fx_'+@msgs[0].effect](@msgs[0].effect_params)
 
     c = gbox.getBufferContext()
     return if not c
     c.fillStyle = 'rgba(0,0,0, 0.5)'
     c.fillRect 0,H-34, W,18
     if @msgs[0].person
-      @msgs[0].person.render_face(1,H-33,1, true)
+      @msgs[0].person.render_face(fx.px,fx.py, fx.pa, true)
     gbox.blitText c,
       font: 'small'
       text: @msgs[0].str
-      dx:18
-      dy:H-28
+      dx:Math.round(fx.tx)
+      dy:Math.round(fx.ty)
       dw:W
       dh:16
       halign: gbox.ALIGN_LEFT
       valign: gbox.ALIGN_TOP
+      alpha: fx.ta
 
 message = new Message
 

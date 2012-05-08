@@ -262,7 +262,7 @@ class Planetmap
     p=0
     for planet in @star.planets
       @positions.push []
-      x = W*0.1 + (W*0.8) * ((p+1)/@star.planets.length)
+      x = (W*0.8) * ((p+1)/@star.planets.length)
       planet.cursorpos =
         x:x
         y:y
