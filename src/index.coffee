@@ -60,10 +60,7 @@ html ->
 
       h4 -> "Flight Mode:"
       ul ->
-        li ->
-          text "Arrow Keys -- control is much like classic Asteroids."
-          ul ->
-            li -> "Down is afterburner ('brake')."
+        li -> "Arrow Keys -- control is much like classic Asteroids."
         li -> "'Z' -- Fire weapon."
         li -> "Grey space stations are ITG (Intergalactic Trade Guard) compliant -- narcotics *may* be detected and confiscated if you bring them here."
         li -> "Brown space stations are Pirate stations -- anything goes, and narcotics have lower prices."

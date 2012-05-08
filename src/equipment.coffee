@@ -88,6 +88,7 @@ class Equipment extends MenuItem
       if player.funds < @eq.price()
         message.set 'Insufficient funds.',120
         return
+      player.funds -= @eq.price()
       @eq.apply()
       return
 
