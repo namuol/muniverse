@@ -1217,6 +1217,7 @@ Equipment = (function(_super) {
         message.set('Insufficient funds.', 120);
         return;
       }
+      player.funds -= this.eq.price();
       this.eq.apply();
       return;
     }
