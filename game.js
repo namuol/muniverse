@@ -1587,11 +1587,12 @@ MissionStarmap = (function(_super) {
     starmap.render_itg_regions(c);
     starmap.render_pirate_regions(c);
     starmap.render_fuel_range(c);
-    starmap.render_map(c);
     starmap.render_current_star(c);
     starmap.render_current_missions(c);
     starmap.render_selected_star(c, this.mission.location.star);
-    return starmap.render_star_info(c, this.mission.location.star);
+    starmap.render_star_info(c, this.mission.location.star);
+    starmap.render_travel_path_to(c, this.mission.location.star);
+    return starmap.render_map(c);
   };
 
   return MissionStarmap;
@@ -1609,11 +1610,10 @@ TaxiMission = (function(_super) {
   TaxiMission.prototype.type = 'taxi';
 
   function TaxiMission(person) {
-    var hurry, ms_per_ly, station;
+    var station;
     this.person = person;
     TaxiMission.__super__.constructor.call(this, this.person);
     if (this.person.fugitive) {
-      this.price *= FUGITIVE_TAXI_BONUS;
       this.loc_name = 'Pirate st.';
       station = choose(starmap.known_pirate_stations);
     } else {
@@ -1621,15 +1621,18 @@ TaxiMission = (function(_super) {
       station = choose(starmap.known_itg_stations);
     }
     this.star = station.star;
-    this.star.dist = starmap.current_star.distance_to(this.star);
+    this.dist = starmap.current_star.distance_to(this.star);
     this.lvl = choose([0, 0, 0, 1, 1, 2]);
-    ms_per_ly = EQUIPMENT.ftl_ms_per_ly.levels[this.lvl].val;
-    hurry = Math.random();
-    this.deadline = date + this.star.dist * ms_per_ly * (2.5 - hurry);
+    this.ms_per_ly = EQUIPMENT.ftl_ms_per_ly.levels[this.lvl].val;
+    this.hurry = Math.random();
+    this.deadline = date + this.dist * this.ms_per_ly * (2.25 - this.hurry);
     this.price = RESOURCES.fuel.mean_price * 4;
-    this.price *= this.star.dist;
-    this.price += this.price * hurry * 0.5;
+    this.price *= this.dist;
+    this.price += this.price * this.hurry * 0.5;
     this.price *= this.lvl + 1;
+    if (this.person.fugitive) {
+      this.price *= FUGITIVE_TAXI_BONUS;
+    }
     this.price = Math.round(this.price * 100) / 100;
     this.location = {
       star: this.star,
@@ -1832,7 +1835,6 @@ Planet = (function() {
       x = this._x + r * Math.cos(ang);
       y = this._y + r * Math.sin(ang);
       this.itg_station = new Station(this, 'itg', x, y);
-      this.itg_station.new_missions();
     }
     if ((pirate === this.num) || this.random() < pirate_station_prob) {
       r = MIN_STATION_DIST + this.radius * 4;
@@ -1840,7 +1842,6 @@ Planet = (function() {
       x = this._x + r * Math.cos(ang);
       y = this._y + r * Math.sin(ang);
       this.pirate_station = new Station(this, 'pirate', x, y);
-      this.pirate_station.new_missions();
     }
     this.dirx = -this.radius * 0.25;
     this.diry = 0;
@@ -2435,7 +2436,8 @@ Starmap = (function() {
     this.cursor.x += vx;
     this.cursor.y += vy;
     if (this.closest_star && gbox.keyIsHit('a')) {
-      if (player.fuel() >= this.closest_star.dist) {
+      dist = this.current_star.distance_to(this.closest_star);
+      if (player.fuel() >= dist) {
         sounds.select.play();
         gbox.clearGroup('planetmap');
         this.closest_star.generate_planets();
@@ -2444,11 +2446,10 @@ Starmap = (function() {
         gbox.addObject(planetmap);
         planetmapMode();
         if (this.current_star !== this.closest_star) {
-          player.burn_fuel(this.closest_star.dist);
-          date += this.closest_star.dist * player.ftl_ms_per_ly;
+          player.burn_fuel(dist);
+          date += dist * player.ftl_ms_per_ly;
           current_planet = void 0;
           this.current_star = this.closest_star;
-          this.closest_star.dist = 0;
         }
         return;
       } else {
@@ -2463,8 +2464,7 @@ Starmap = (function() {
       previous = this.closest_star;
       this.closest_star = this.closest(this.cursor.x, this.cursor.y);
       dx = this.current_star.x - this.closest_star.x;
-      dy = this.current_star.y - this.closest_star.y;
-      return this.closest_star.dist = Math.sqrt(dx * dx + dy * dy) * LY_SCALE;
+      return dy = this.current_star.y - this.closest_star.y;
     }
   };
 
@@ -2478,8 +2478,26 @@ Starmap = (function() {
       this.render_cursor(c);
       this.render_star_info(c, this.closest_star);
     }
+    if (this.closest_star && this.closest_star !== this.current_star) {
+      this.render_travel_path_to(c, this.closest_star);
+    }
     this.render_current_missions(c);
     return this.render_map(c);
+  };
+
+  Starmap.prototype.render_travel_path_to = function(c, star) {
+    var col, fuel_diff;
+    if (star !== this.current_star) {
+      fuel_diff = player.fuel() - this.current_star.distance_to(star);
+      if (fuel_diff < 0) {
+        col = rgba([255, 70, 70, 0.5]);
+      } else if (fuel_diff < player.fuel() / 2) {
+        col = rgba([255, 255, 70, 0.5]);
+      } else {
+        col = rgba([70, 255, 70, 0.5]);
+      }
+      return this.render_star_connections(c, this.current_star, star, col);
+    }
   };
 
   Starmap.prototype.render_current_missions = function(c) {
@@ -2574,6 +2592,14 @@ Starmap = (function() {
 
   Starmap.prototype.render_fuel_range = function(c) {
     return circle(c, '#33e5ff', Math.round(this.current_star.x), Math.round(this.current_star.y), player.fuel() / LY_SCALE);
+  };
+
+  Starmap.prototype.render_star_connections = function(c, s1, s2, col) {
+    c.strokeStyle = col;
+    c.beginPath();
+    c.moveTo(s1.x + 0.5, s1.y + 0.5);
+    c.lineTo(s2.x + 0.5, s2.y + 0.5);
+    return c.stroke();
   };
 
   Starmap.prototype.blit = function() {
@@ -3345,6 +3371,7 @@ stationMode = function(station) {
     gbox.stopGroup(g);
   }
   menustack = new MenuStack;
+  station.new_missions();
   menustack.pushMenu(new StationScreen(station, menustack));
   gbox.addObject(menustack);
   groups = ['menustack'];
@@ -3377,6 +3404,10 @@ Station = (function() {
 
   Station.prototype.new_missions = function() {
     var activity, c, count, i, max_count, max_resource_count, mission, mission_count, name, person, res, resource_wealth, _results;
+    if (date - this.missions_last_generated_at < 1 * DAYS) {
+      return;
+    }
+    this.missions_last_generated_at = date;
     menustack = new MenuStack;
     max_count = PLANET_CLASSES[this.planet.ptype].max_mission_count;
     activity = this.planet.star.itg + this.planet.star.pirate;
@@ -3435,6 +3466,7 @@ Station = (function() {
     this.name = name;
     this.x = x;
     this.y = y;
+    this.missions_last_generated_at = 0;
     this.num = STATIONS[this.name].num;
     this.frame_length = STATIONS[this.name].frame_length;
     this.next_frame = this.frame_length;
