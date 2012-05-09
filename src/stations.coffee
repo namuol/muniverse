@@ -20,6 +20,7 @@ stationMode = (station) ->
     gbox.stopGroup g
 
   menustack = new MenuStack
+  station.new_missions()
   menustack.pushMenu new StationScreen station, menustack
 
   gbox.addObject menustack
@@ -47,6 +48,8 @@ STATIONS = {
 DOCKING_DURATION = 80
 class Station
   new_missions: ->
+    return if date - @missions_last_generated_at < 1 * DAYS
+    @missions_last_generated_at = date
     menustack = new MenuStack
 
     max_count = PLANET_CLASSES[@planet.ptype].max_mission_count
@@ -85,6 +88,7 @@ class Station
 
   group: 'stations'
   constructor: (@planet, @name, @x,@y) ->
+    @missions_last_generated_at = 0
     @num = STATIONS[@name].num
     @frame_length = STATIONS[@name].frame_length
     @next_frame = @frame_length

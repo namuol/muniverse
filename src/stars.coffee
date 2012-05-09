@@ -207,7 +207,8 @@ class Starmap
       
 
     if @closest_star and gbox.keyIsHit 'a'
-      if player.fuel() >= @closest_star.dist
+      dist = @current_star.distance_to @closest_star
+      if player.fuel() >= dist
         sounds.select.play()
         gbox.clearGroup 'planetmap'
         @closest_star.generate_planets()
@@ -216,11 +217,10 @@ class Starmap
         gbox.addObject planetmap
         planetmapMode()
         if @current_star != @closest_star
-          player.burn_fuel(@closest_star.dist)
-          date += @closest_star.dist * player.ftl_ms_per_ly
+          player.burn_fuel(dist)
+          date += dist * player.ftl_ms_per_ly
           current_planet = undefined
           @current_star = @closest_star
-          @closest_star.dist = 0
         return
       else
         message.set 'Insufficient fuel.', 90
@@ -234,7 +234,6 @@ class Starmap
       @closest_star = @closest(@cursor.x,@cursor.y)
       dx = @current_star.x-@closest_star.x
       dy = @current_star.y-@closest_star.y
-      @closest_star.dist = Math.sqrt(dx*dx+dy*dy)*LY_SCALE
 
   render: (c) ->
     c.drawImage gbox.getImage('starmap_gui'), 0,0
@@ -247,10 +246,21 @@ class Starmap
       @render_current_star c
       @render_cursor c
       @render_star_info c, @closest_star
-
+    if @closest_star and @closest_star != @current_star
+      @render_travel_path_to c, @closest_star
     @render_current_missions c
-
     @render_map c
+  
+  render_travel_path_to: (c, star) ->
+    if star != @current_star
+      fuel_diff = player.fuel() - @current_star.distance_to(star)
+      if fuel_diff < 0
+        col = rgba [255,70,70,0.5]
+      else if fuel_diff < player.fuel()/2
+        col = rgba [255,255,70,0.5]
+      else
+        col = rgba [70,255,70,0.5]
+      @render_star_connections c, @current_star, star, col
 
   render_current_missions: (c) ->
     for m in player.missions
@@ -319,6 +329,13 @@ class Starmap
       Math.round(@current_star.x),
       Math.round(@current_star.y),
       player.fuel()/LY_SCALE
+
+  render_star_connections: (c, s1, s2, col) ->
+    c.strokeStyle = col
+    c.beginPath()
+    c.moveTo s1.x+0.5, s1.y+0.5
+    c.lineTo s2.x+0.5, s2.y+0.5
+    c.stroke()
 
   blit: ->
     c = gbox.getBufferContext()

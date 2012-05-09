@@ -122,11 +122,12 @@ class MissionStarmap extends Dialog
     starmap.render_itg_regions c
     starmap.render_pirate_regions c
     starmap.render_fuel_range c
-    starmap.render_map c
     starmap.render_current_star c
     starmap.render_current_missions c
     starmap.render_selected_star c, @mission.location.star
     starmap.render_star_info c, @mission.location.star
+    starmap.render_travel_path_to c, @mission.location.star
+    starmap.render_map c
 
 FUGITIVE_TAXI_BONUS = 1.25
 class TaxiMission extends CabinDweller
@@ -135,7 +136,6 @@ class TaxiMission extends CabinDweller
     super @person
 
     if @person.fugitive
-      @price *= FUGITIVE_TAXI_BONUS
       @loc_name = 'Pirate st.'
       station = (choose starmap.known_pirate_stations)
     else
@@ -143,15 +143,16 @@ class TaxiMission extends CabinDweller
       station = (choose starmap.known_itg_stations)
     
     @star = station.star
-    @star.dist = starmap.current_star.distance_to @star
+    @dist = starmap.current_star.distance_to @star
     @lvl = choose [0,0,0,1,1,2]
-    ms_per_ly = EQUIPMENT.ftl_ms_per_ly.levels[@lvl].val
-    hurry = Math.random()
-    @deadline = date + @star.dist * ms_per_ly * (2.5 - hurry)
+    @ms_per_ly = EQUIPMENT.ftl_ms_per_ly.levels[@lvl].val
+    @hurry = Math.random()
+    @deadline = date + @dist * @ms_per_ly * (2.25 - @hurry)
     @price = RESOURCES.fuel.mean_price * 4
-    @price *= @star.dist
-    @price += @price * hurry * 0.5
+    @price *= @dist
+    @price += @price * @hurry * 0.5
     @price *= (@lvl+1)
+    @price *= FUGITIVE_TAXI_BONUS if @person.fugitive
     @price = Math.round(@price*100)/100
     @location =
       star: @star

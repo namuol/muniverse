@@ -127,7 +127,6 @@ class Planet
       x = @_x + r*Math.cos ang
       y = @_y + r*Math.sin ang
       @itg_station = new Station @, 'itg', x,y
-      @itg_station.new_missions()
 
     if (pirate is @num) or @random() < pirate_station_prob
       r =MIN_STATION_DIST + @radius * 4
@@ -135,7 +134,6 @@ class Planet
       x = @_x + r*Math.cos ang
       y = @_y + r*Math.sin ang
       @pirate_station = new Station @, 'pirate', x,y
-      @pirate_station.new_missions()
 
     # Sunlight direction:
     @dirx = -@radius*0.25#frand(-@radius,@radius)
