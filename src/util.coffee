@@ -25,6 +25,11 @@ gaus = (mean, stdv) ->
   rnd = (Math.random()*2-1)+(Math.random()*2-1)+(Math.random()*2-1)
   return rnd*stdv + mean
 
+dist2 = (a,b) ->
+  dx=a.x-b.x
+  dy=a.y-b.y
+  return dx*dx+dy*dy
+
 dist = (a,b) ->
   dx=a.x-b.x
   dy=a.y-b.y

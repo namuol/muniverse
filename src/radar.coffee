@@ -40,5 +40,3 @@ class Radar
             item.render x,y, 1
           else
             DEFAULT_RADAR_RENDER x,y, 1
-
-

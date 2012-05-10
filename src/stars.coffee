@@ -207,8 +207,12 @@ class Starmap
       
 
     if @closest_star and gbox.keyIsHit 'a'
-      dist = @current_star.distance_to @closest_star
-      if player.fuel() >= dist
+      dst = @current_star.distance_to @closest_star
+      if player.fuel() < dst
+        message.set 'Insufficient fuel.', 90
+      else if not player.can_flee(true)
+        message.set 'FTL disrupted by nearby objects.'
+      else
         sounds.select.play()
         gbox.clearGroup 'planetmap'
         @closest_star.generate_planets()
@@ -217,13 +221,11 @@ class Starmap
         gbox.addObject planetmap
         planetmapMode()
         if @current_star != @closest_star
-          player.burn_fuel(dist)
-          date += dist * player.ftl_ms_per_ly
+          player.burn_fuel(dst)
+          date += dst * player.ftl_ms_per_ly
           current_planet = undefined
           @current_star = @closest_star
         return
-      else
-        message.set 'Insufficient fuel.', 90
 
     if gbox.keyIsHit 'c'
       sounds.cancel.play()

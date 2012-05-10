@@ -223,6 +223,25 @@ class Player
       tile: @frame
       dx: Math.round(@x-cam.x)
       dy: Math.round(@y-cam.y)
+    
+  # Is the user out of range of enemy ships/planets/stations/objects?
+  can_flee: ->
+    MIN_DIST = 1200
+    MIN_DIST2 = MIN_DIST*MIN_DIST
+
+    groups = [
+      'baddies'
+      'planet'
+      'stations'
+    ]
+
+    for groupname in groups
+      group = gbox.getGroup groupname
+      for own k,obj of group
+        dst2 = dist2 @, obj
+        if dst2 < MIN_DIST2
+          return false
+    return true
 
   die: ->
     sounds.explode.play()
