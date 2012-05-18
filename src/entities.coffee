@@ -1,12 +1,10 @@
 class Person
-  constructor: (role, fugitive) ->
+  constructor: (@role, @fugitive) ->
     @parts = []
     @parts.push rand 0, 15
     @parts.push rand 0, 15
     if rand(0,1)
       @parts.push @parts[1]
-    @role = role
-    @fugitive = fugitive
     @tick = 0
 
   render: (x,y, alpha, talking) ->
@@ -73,12 +71,14 @@ class Baddie
           @tsx = player.x + player.vx + @vx
           @tsy = player.y + player.vy + @vy
           @wcharge -= @wcost
-          gbox.addObject new Shot @x+@w/2,@y+@h/2,
+          shot = new Shot @x+@w/2,@y+@h/2,
             @tsx,
             @tsy,
             @wpower,
-            @wspeed, 1, 'foe_shots', @wspan,
+            @wspeed, 1, 'shots', @wspan,
             @vx, @vy
+          shot.ship = @
+          gbox.addObject shot
       @ang += 0.005
       xoff = Math.cos @ang
       yoff = Math.sin @ang
@@ -110,7 +110,8 @@ class Baddie
     if @wcharge < @wcharge_cap
       @wcharge += 1
 
-    groupCollides @, 'friend_shots', (shot) =>
+    groupCollides @, 'shots', (shot) =>
+      return if shot.ship is @
       sounds['hit'+rand(0,3)].play()
       @hostile = true
       @shields -= shot.power

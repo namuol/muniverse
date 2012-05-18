@@ -20,6 +20,7 @@ appFiles  = [
   'time'
   'ui'
   'sounds'
+  'ship'
   'entities'
   'equipment'
   'fx'

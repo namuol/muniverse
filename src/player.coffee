@@ -1,7 +1,6 @@
 flightMode = (reset) ->
   if reset
-    gbox.clearGroup 'friend_shots'
-    gbox.clearGroup 'foe_shots'
+    gbox.clearGroup 'shots'
     gbox.clearGroup 'particles'
     gbox.clearGroup 'baddies'
     baddy_count = rand 0, 6
@@ -40,8 +39,7 @@ flightMode = (reset) ->
     'player'
     'baddies'
     'drones'
-    'friend_shots'
-    'foe_shots'
+    'shots'
     'resources'
     'particles'
     'stations'
@@ -77,19 +75,22 @@ BASE_CARGO_CAP = 5
 BASE_AFTERBURN = EQUIPMENT.afterburn.levels[0].val
 player = undefined
 date = 0
-class Player
+class Player extends Ship
   constructor: (name) ->
+    super new Person
     @alive = true
     @missions = []
     @funds = 500
     @cabins = []
     @available_cabins = 3
-    @wcharge_cap = BASE_WCHARGE_CAP
-    @wcharge_rate = BASE_WCHARGE_RATE
-    @wcharge = @wcharge_cap
-    @wspeed = BASE_WSPEED
-    @wpower = BASE_WPOWER
-    @wspan = BASE_WSPAN
+    weapon_options =
+      charge_cap: BASE_WCHARGE_CAP
+      charge_rate: BASE_WCHARGE_RATE
+      charge: BASE_WCHARGE_CAP
+      speed: BASE_WSPEED
+      power: BASE_WPOWER
+      span: BASE_WSPAN
+    @weapon = new ShipWeapon(@, weapon_options)
     @thrust = BASE_THRUST
     @afterburn = BASE_AFTERBURN
     @shields_max = BASE_SHIELDS
@@ -140,84 +141,48 @@ class Player
     @ay = 0
     @particle_tick=0
 
-  setAng: (val) ->
-    @ang = val
-    @ax = Math.cos(@ang) * @thrust
-    @ay = Math.sin(@ang) * @thrust
 
   first: ->
     if @skip
       @skip = false
       return
 
-    @going = false
     #if gbox.keyIsHit 'up'
     #  sounds.thruster.play()
     #else if gbox.keyIsReleased 'up'
     #  sounds.thruster.stop()
     if gbox.keyIsPressed 'up'
-      @going = true
-      @vx += @ax
-      @vy += @ay
+      @thrusting = true
     else
+      @thrusting = false
       if not (gbox.keyIsPressed('down') or gbox.keyIsPressed('b'))
-        @vx *= 1-@afterburn
-        @vy *= 1-@afterburn
+        @braking = true
 
     if gbox.keyIsPressed 'right'
-      @setAng(@ang + TURN_SPEED)
+      @turning = TURN_SPEED
     else if gbox.keyIsPressed 'left'
-      @setAng(@ang - TURN_SPEED)
+      @turning = -TURN_SPEED
+    else
+      @turning = 0
 
-    if @ang < 0
-      @ang = Math.PI*2 - @ang
+    if gbox.keyIsHit('a')
+      @shot = true
+    else
+      @shot = false
 
-    @x += @vx
-    @y += @vy
+    if gbox.keyIsHit 'c'
+      planetmapMode()
+    
+    super()
 
+  blit: ->
     @frame = Math.round(((@ang+(Math.PI/2)) / (Math.PI*2)) * 16) % 16
-    if @going
+    if @thrusting
       @frame += 16
       if ++@particle_tick % 4 is 0
         addParticle 'fire', @x+@w/2,@y+@h/2,
           @vx-@ax*40*frand(0.5,1),@vy-@ay*40*frand(0.5,1)
 
-    if gbox.keyIsHit('a') and (@wcharge >= @wpower)
-      @wcharge -= @wpower
-      sounds.shot0.play()
-      gbox.addObject new Shot @x+@w/2,@y+@h/2,
-        @x+@w/2+(@ax/@thrust)*20000,
-        @y+@h/2+(@ay/@thrust)*20000,
-        @wpower,
-        @wspeed, 4, 'friend_shots', @wspan,
-        @vx, @vy
-
-    if @wcharge < @wcharge_cap
-      @wcharge += @wcharge_rate
-
-    groupCollides @, 'foe_shots', (shot) =>
-      sounds['hit'+rand(0,3)].play()
-      cam.shake += 5
-      i=0
-      while i < 3
-        addParticle 'fire', @x+@w/2,@y+@h/2,
-          @vx+frand(-.5,.5),@vy+frand(-.5,.5)
-        ++i
-      @shields -= shot.power
-      if @shields <= 0
-        @die()
-      shot.die()
-    
-    if not @going
-      if Math.abs(@vx) < 0.2
-        @vx = 0
-      if Math.abs(@vy) < 0.2
-        @vy = 0
-
-    if gbox.keyIsHit 'c'
-      planetmapMode()
-
-  blit: ->
     gbox.blitTile gbox.getBufferContext(),
       tileset: @tileset
       tile: @frame
