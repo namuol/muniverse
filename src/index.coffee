@@ -12,10 +12,25 @@ html ->
     script type:'text/javascript', src:'game.js'
     link rel:'stylesheet', href:'style.css'
     meta charset:'utf-8'
-    
     meta
       name:'viewport'
       content:'width:device-width; initial-scale:1.0; maximum-scale:1.0; user-scalable:0;'
+    text """
+      <script type="text/javascript">
+
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-33247419-1']);
+        _gaq.push(['_trackPageview']);
+
+        (function() {
+          var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+          ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+          var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+        })();
+
+      </script>
+    """
+
   body ->
     div id:'links', ->
       a href:'http://namuol.github.com/', 'namuol.github.com'
