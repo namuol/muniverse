@@ -37,6 +37,7 @@ class Ship
     @ang = 0
     @turning = 0
     @setAng(@ang)
+    @flee_groups = []
 
   setAng: (val) ->
     @ang = val
@@ -87,6 +88,20 @@ class Ship
         @vx = 0
       if Math.abs(@vy) < 0.2
         @vy = 0
+
+  # Is the ship out of range of enemy ships/planets/stations/objects?
+  can_flee: ->
+    MIN_DIST = 1200
+    MIN_DIST2 = MIN_DIST*MIN_DIST
+
+    for groupname in @flee_groups
+      group = gbox.getGroup groupname
+      for own k,obj of group
+        dst2 = dist2 @, obj
+        if dst2 < MIN_DIST2
+          return false
+    return true
+
 
 class CargoBay
   constructor: (@capacity) ->

@@ -109,6 +109,11 @@ class Player extends Ship
     for own attr,eq of EQUIPMENT
       if not eq.no_default
         @equipment[eq.name] = 0
+    @flee_groups = [
+      'baddies'
+      'planet'
+      'stations'
+    ]
 
     @init()
 
@@ -140,7 +145,6 @@ class Player extends Ship
     @ax = 0
     @ay = 0
     @particle_tick=0
-
 
   first: ->
     if @skip
