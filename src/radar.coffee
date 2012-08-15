@@ -1,14 +1,17 @@
-DEFAULT_RADAR_RENDER = (x,y, alpha) ->
+dot = (color, x,y, alpha) ->
   x = clamp(x, 4, cam.w-4)+0.5
   y = clamp(y, 4, cam.h-4)+0.5
   c = gbox.getBufferContext()
   if c
-    circle c, 'yellow', Math.round(x),Math.round(y), 1
+    circle c, color, Math.round(x),Math.round(y), 1
+
+DEFAULT_RADAR_RENDER = (x,y, alpha) ->
+  dot 'yellow', x,y, alpha
 
 RADAR_ITEMS =
   'planet':
     min_dist: -> -1
-    render: (x,y, alpha) ->
+    render: (x,y, alpha, obj) ->
       r = 4/current_planet.radius
       current_planet.render r,
         Math.round(clamp(x, 4, W-4)),
@@ -16,6 +19,15 @@ RADAR_ITEMS =
         current_planet.dirx,current_planet.diry
   'stations':
     min_dist: -> -1
+  'baddies':
+    min_dist: -> 1000
+    render: (x,y, alpha, obj) ->
+      if obj.hostile
+        dot 'red', x,y, alpha
+      else
+        dot 'green', x,y, alpha
+
+
 class Radar
   group: 'radar'
   constructor: ->
@@ -37,6 +49,6 @@ class Radar
           y = clamp c.y+dy, 0,cam.h
           continue if _x==x and _y==y
           if item.render
-            item.render x,y, 1
+            item.render x,y, 1, obj
           else
             DEFAULT_RADAR_RENDER x,y, 1
