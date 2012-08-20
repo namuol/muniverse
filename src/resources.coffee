@@ -65,25 +65,18 @@ RESOURCES =
 class CargoItem
   constructor: (@origin) ->
 
-class Resource
+class Resource extends CargoItem
   group: 'resources'
-  constructor: (name, x,y, vx,vy, planet) ->
-    @planet = planet
+  constructor: (@name, @x,@y, @vx,@vy, @planet) ->
     @num = RESOURCES[name].num
-    @name = name
     @next_frame = @frame_length
     @frame = rand @num*8, @num*8 + 8
     @tileset = 'resources_tiles'
     @w = 3
     @h = 3
-    if vx and vy
-      @vx = vx
-      @vy = vy
     @tick = 0
     @xoff = x
     @yoff = y
-    @x = 0
-    @y = 0
     @active = true
 
   frame_length: 4
@@ -102,14 +95,14 @@ class Resource
     else
       @x += @vx
       @y += @vy
-      @vx *= 0.005
-      @vy *= 0.005
+      @vx *= 0.99
+      @vy *= 0.99
 
     if gbox.collides player,@
       sounds.blip.play()
       if !player.cargo[@name]
         player.cargo[@name] = []
-      player.cargo[@name].push new CargoItem current_planet.pid
+      player.cargo[@name].push @
       message.set '+1 ' + @name, 60
       @die()
 

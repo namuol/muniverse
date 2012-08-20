@@ -100,10 +100,14 @@ class Player extends Ship
 
     @cargo =
       fuel: [
-        1,2,3,4
+        new Resource 'fuel'
+        new Resource 'fuel'
+        new Resource 'fuel'
+        new Resource 'fuel'
       ]
       narcotics: [
-       'teehee',2
+        new Resource 'narcotics'
+        new Resource 'narcotics'
       ]
     @equipment = {}
     for own attr,eq of EQUIPMENT

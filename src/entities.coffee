@@ -52,10 +52,14 @@ class Baddie extends Ship
 
     @cargo =
       fuel: [
-        1,2,3,4
+        new Resource 'fuel'
+        new Resource 'fuel'
+        new Resource 'fuel'
+        new Resource 'fuel'
       ]
       narcotics: [
-       'teehee',2
+        new Resource 'narcotics'
+        new Resource 'narcotics'
       ]
 
     # TODO: Determine badassness of ship's equipment here.
@@ -83,8 +87,9 @@ class Baddie extends Ship
     @tileset = 'ship0_tiles'
     @w = 8
     @h = 8
-    @x = frand(-gbox.getScreenW()*3, -gbox.getScreenW()*3)
-    @y = frand(-gbox.getScreenH()*3, -gbox.getScreenH()*3)
+
+    @x = Math.random() * gbox.getScreenW()*3
+    @y = Math.random() * gbox.getScreenH()*3
     @vx = 0
     @vy = 0
     @ang = 0
@@ -102,34 +107,9 @@ class Baddie extends Ship
     if @skip
       @skip = false
       return
+    @turning = TURN_SPEED
+    @thrusting = true
 
-    #if gbox.keyIsHit 'up'
-    #  sounds.thruster.play()
-    #else if gbox.keyIsReleased 'up'
-    #  sounds.thruster.stop()
-    ###
-    if gbox.keyIsPressed 'up'
-      @thrusting = true
-    else
-      @thrusting = false
-      if not (gbox.keyIsPressed('down') or gbox.keyIsPressed('b'))
-        @braking = true
-
-    if gbox.keyIsPressed 'right'
-      @turning = TURN_SPEED
-    else if gbox.keyIsPressed 'left'
-      @turning = -TURN_SPEED
-    else
-      @turning = 0
-
-    if gbox.keyIsHit('a')
-      @shot = true
-    else
-      @shot = false
-
-    if gbox.keyIsHit 'c'
-      planetmapMode()
-    ###
     super()
 
   blit: ->
@@ -146,22 +126,8 @@ class Baddie extends Ship
       dx: Math.round(@x-cam.x)
       dy: Math.round(@y-cam.y)
     
-  die: ->
-    sounds.explode.play()
-    #sounds.thruster.stop()
-    @alive = false
-    gbox.trashObject @
-    i=0
-    while i < 20
-      addParticle 'fire', @x+@w/2,@y+@h/2,
-        @vx+frand(-1,1),@vy+frand(-1,1)
-      ++i
-    i=0
-    while i < 12
-      addParticle 'wreckage', @x+@w/2,@y+@h/2,
-        @vx+frand(-0.5,0.5),@vy+frand(-.5,.5)
-      ++i
 
+###
 class Baddie extends Ship
   group: 'baddies'
   constructor: () ->
@@ -279,7 +245,7 @@ class Baddie extends Ship
     gbox.blitAll gbox.getBufferContext(), @image,
       dx: Math.round(@x-cam.x)
       dy: Math.round(@y-cam.y)
-
+###
 
 addBaddie = ->
   gbox.addObject new Baddie

@@ -24,7 +24,6 @@ class ShipWeapon
     shot.ship = @ship
 
     gbox.addObject shot
-    console.log 'boom'
 
 class Ship
   constructor: (@owner) ->
@@ -47,6 +46,7 @@ class Ship
       @ang = Math.PI*2 - @ang
 
   first: ->
+    return if not @alive
 
     if @thrusting # D'HURRR
       @vx += @ax
@@ -68,6 +68,21 @@ class Ship
 
     @weapon.update()
 
+    groupCollides @, 'resources', (res) =>
+      if @ is player
+        message.set '+1 ' + res.name, 60
+        sounds.blip.play()
+      if !@cargo[res.name]
+        @cargo[res.name] = []
+      @cargo[res.name].push @
+      res.die()
+    
+    if not @thrusting
+      if Math.abs(@vx) < 0.2
+        @vx = 0
+      if Math.abs(@vy) < 0.2
+        @vy = 0
+
     groupCollides @, 'shots', (shot) =>
       return if shot.ship is @
 
@@ -82,12 +97,7 @@ class Ship
       if @shields <= 0
         @die()
       shot.die()
-    
-    if not @thrusting
-      if Math.abs(@vx) < 0.2
-        @vx = 0
-      if Math.abs(@vy) < 0.2
-        @vy = 0
+
 
   # Is the ship out of range of enemy ships/planets/stations/objects?
   can_flee: ->
@@ -102,6 +112,34 @@ class Ship
           return false
     return true
 
+  die: ->
+    sounds.explode.play()
+    #sounds.thruster.stop()
+    @alive = false
+    gbox.trashObject @
+    i=0
+    while i < 20
+      addParticle 'fire', @x+@w/2,@y+@h/2,
+        @vx+frand(-1,1),@vy+frand(-1,1)
+      ++i
+    i=0
+    while i < 6
+      addParticle 'wreckage', @x+@w/2,@y+@h/2,
+        @vx+frand(-0.5,0.5),@vy+frand(-.5,.5)
+      ++i
+    
+    i=0
+    while i < rand(6,12)
+      gbox.addObject new Resource 'scrap metal', @x,@y, @vx+frand(-1,1),@vy+frand(-1,1)
+      ++i
+
+    for own resource_name,arr of @cargo
+      for r in arr
+        r.x = @x
+        r.y = @y
+        r.vx = @vx+frand(-.5,.5)
+        r.vy = @vy+frand(-.5,.5)
+        gbox.addObject r
 
 class CargoBay
   constructor: (@capacity) ->
